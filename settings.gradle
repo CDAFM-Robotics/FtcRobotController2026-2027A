@@ -1,10 +1,42 @@
 pluginManagement {
     repositories {
-        google()
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
         mavenCentral()
         gradlePluginPortal()
     }
 }
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        // CDALib (the library under test) is resolved from the local Maven repo it publishes to
+        // (`./gradlew :cdalib:publishToMavenLocal` in the CDALib project), or from JitPack.
+        mavenLocal()
+        maven { url = 'https://jitpack.io' }
+        // Pedro Pathing (com.pedropathing:*) and Panels (com.bylazar:*) are published here.
+        maven { url = 'https://mymaven.bylazar.com/releases' }
+    }
+}
 
-include ':FtcRobotController'
+rootProject.name = "FtcRobotController2026-2027A"
 include ':TeamCode'
+// The FTC SDK Robot Controller app scaffold (launcher activity, manifest, resources). The
+// deployable APK is the :teamcode application module, which depends on this library.
+include ':FtcRobotController'
+
+// Build CDALib from source instead of consuming a (cache-prone) published AAR. Any change to the
+// library is picked up on the next build — no publishToMavenLocal step, no stale-artifact issues.
+// The explicit substitution maps the `com.cdarobotics:cdalib` coordinate used in teamcode's
+// build.gradle onto the local :cdalib project.
+includeBuild('../CDALib') {
+    dependencySubstitution {
+        substitute module('com.cdarobotics:cdalib') using project(':cdalib')
+    }
+}

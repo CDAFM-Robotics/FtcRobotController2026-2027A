@@ -19,7 +19,9 @@ import java.util.regex.Pattern
 
 android {
 
-    compileSdkVersion 30
+    // FTC SDK 11.x and its androidx/PedroPathing transitive deps require compiling against
+    // API 36 (they fail checkAarMetadata below 34/36). targetSdk stays at 28 per FTC.
+    compileSdkVersion 36
 
     signingConfigs {
         release {

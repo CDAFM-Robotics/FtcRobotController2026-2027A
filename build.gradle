@@ -1,31 +1,15 @@
-/**
- * Top-level build file for ftc_app project.
- *
- * It is extraordinarily rare that you will ever need to edit this file.
- */
-
+// Top-level build file for the CDALib test Robot Controller project.
+//
+// The FtcRobotController / TeamCode modules apply AGP the legacy way (`apply plugin:
+// 'com.android.library'`), which requires the Android Gradle Plugin on the buildscript
+// classpath here. We pin the SAME AGP version CDALib uses (8.13.2) so the composite build
+// (see settings.gradle `includeBuild('../CDALib')`) doesn't load two conflicting AGP versions.
 buildscript {
     repositories {
-        mavenCentral()
         google()
-    }
-}
-
-plugins {
-    // Note for FTC Teams: Do not modify this yourself.
-    id 'com.android.application' version '8.13.2' apply false
-    id 'com.android.library' version '8.13.2' apply false
-}
-
-// This is now required because aapt2 has to be downloaded from the
-// google() repository beginning with version 3.2 of the Android Gradle Plugin
-allprojects {
-    repositories {
         mavenCentral()
-        google()
     }
-}
-
-repositories {
-    mavenCentral()
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.13.2'
+    }
 }
