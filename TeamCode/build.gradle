@@ -27,8 +27,18 @@ android {
 dependencies {
     implementation project(':FtcRobotController')
 
-    // CDALib. The coordinate is substituted for the local `:cdalib` project by the
-    // includeBuild(...) dependencySubstitution block in settings.gradle, so any change to
-    // CDALib source is picked up on the next build (no publishToMavenLocal needed).
-    implementation 'com.cdarobotics:cdalib:0.1.0'
+    // CDALib, resolved from JitPack (repository declared in settings.gradle). Library changes
+    // require a new tag in the CDALib repo and a bump of the version below.
+    //
+    // '@aar' pins the request to the artifact JitPack actually publishes. An Android library
+    // produces no plain .jar, and JitPack's handling of a missing artifact is unreliable: it
+    // has accepted the connection and then sent nothing at all, stalling a sync until Gradle's
+    // socket timeout fires three times over. Artifacts that exist are served in milliseconds
+    // even while that is happening.
+    //
+    // 'transitive = true' is required: artifact-only notation ('@ext') drops the library's own
+    // dependencies by default, and PedroPathing, Panels and PhotonFTC all arrive via CDALib.
+    implementation('com.github.CDAFM-Robotics:CDALib:v0.1.0@aar') {
+        transitive = true
+    }
 }

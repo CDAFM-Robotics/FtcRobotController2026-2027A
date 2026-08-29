@@ -31,12 +31,6 @@ include ':TeamCode'
 // deployable APK is the :teamcode application module, which depends on this library.
 include ':FtcRobotController'
 
-// Build CDALib from source instead of consuming a (cache-prone) published AAR. Any change to the
-// library is picked up on the next build — no publishToMavenLocal step, no stale-artifact issues.
-// The explicit substitution maps the `com.cdarobotics:cdalib` coordinate used in teamcode's
-// build.gradle onto the local :cdalib project.
-includeBuild('../CDALib') {
-    dependencySubstitution {
-        substitute module('com.cdarobotics:cdalib') using project(':cdalib')
-    }
-}
+// CDALib is consumed as a published AAR from JitPack (see :TeamCode's build.gradle). To test an
+// unreleased library change, tag a new version in the CDALib repo and bump the coordinate — or
+// temporarily add an includeBuild('<path to CDALib>') here with a dependencySubstitution rule.
