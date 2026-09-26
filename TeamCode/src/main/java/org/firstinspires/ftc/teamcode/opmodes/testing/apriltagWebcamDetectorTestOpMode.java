@@ -102,6 +102,7 @@ public class apriltagWebcamDetectorTestOpMode extends LinearOpMode {
     }
     private void telemetryAprilTag() {
 
+        /*
         List<AprilTagDetection> currentDetections = aprilTag.getDetections();
         telemetry.addData("# AprilTags Detected", currentDetections.size());
 
@@ -121,7 +122,9 @@ public class apriltagWebcamDetectorTestOpMode extends LinearOpMode {
         // Add "key" information to telemetry
         telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
         telemetry.addLine("PRY = Pitch, Roll & Yaw (XYZ Rotation)");
-        telemetry.addLine("RBE = Range, Bearing & Elevation");
+        telemetry.addLine("RBE = Range, Bearing & Elevation")
+        ;
+         */
 
     }
 
