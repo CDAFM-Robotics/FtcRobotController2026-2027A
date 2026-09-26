@@ -3,21 +3,25 @@
 // so declaring a `repositories {}` block here would fail the build.
 
 dependencies {
-    implementation 'org.firstinspires.ftc:Inspection:11.2.1'
-    implementation 'org.firstinspires.ftc:Blocks:11.2.1'
-    implementation 'org.firstinspires.ftc:RobotCore:11.2.1'
-    implementation 'org.firstinspires.ftc:RobotServer:11.2.1'
-    implementation 'org.firstinspires.ftc:OnBotJava:11.2.1'
-    implementation 'org.firstinspires.ftc:Hardware:11.2.1'
-    implementation 'org.firstinspires.ftc:FtcCommon:11.2.1'
-    implementation 'org.firstinspires.ftc:Vision:11.2.1'
+    implementation 'org.firstinspires.ftc:Inspection:12.0.0'
+    implementation 'org.firstinspires.ftc:Blocks:12.0.0'
+    implementation 'org.firstinspires.ftc:RobotCore:12.0.0'
+    implementation 'org.firstinspires.ftc:RobotServer:12.0.0'
+    implementation 'org.firstinspires.ftc:OnBotJava:12.0.0'
+    implementation 'org.firstinspires.ftc:Hardware:12.0.0'
+    implementation 'org.firstinspires.ftc:FtcCommon:12.0.0'
+    implementation 'org.firstinspires.ftc:Vision:12.0.0'
     implementation 'androidx.appcompat:appcompat:1.2.0'
 
-    // Pedro Pathing — autonomous path following. Repositories are declared in settings.gradle
-    // (this project uses RepositoriesMode.FAIL_ON_PROJECT_REPOS).
-    implementation 'com.pedropathing:ftc:2.1.2'
-    implementation 'com.pedropathing:telemetry:1.0.0'
-    // Panels — the web dashboard/telemetry backend the Pedro tuning OpModes render to.
+    // Pedro Pathing 3.0 — autonomous path following. Repositories are declared in settings.gradle
+    // (this project uses RepositoriesMode.FAIL_ON_PROJECT_REPOS); all three artifacts are now on
+    // Maven Central. Pedro 3 split the old single 'com.pedropathing:ftc' artifact into 'core' (pure
+    // pathing/math) + 'revhub' (the REV-hub hardware layer); 'revhub' pulls 'core' transitively.
+    // 'tuning' provides the AutoTune procedures registered in the pedropathing.Tuning class. The 2.x
+    // 'com.pedropathing:telemetry' artifact was removed — tuning now renders through AutoTune/Panels.
+    implementation 'com.pedropathing:revhub:3.0.1'
+    implementation 'com.pedropathing:tuning:1.0.1'
+    // Panels — web dashboard/telemetry backend.
     implementation 'com.bylazar:fullpanels:1.0.12'
 }
 

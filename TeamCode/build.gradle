@@ -38,7 +38,7 @@ dependencies {
     //
     // 'transitive = true' is required: artifact-only notation ('@ext') drops the library's own
     // dependencies by default, and PedroPathing, Panels and PhotonFTC all arrive via CDALib.
-    implementation('com.github.CDAFM-Robotics:CDALib:v0.1.0@aar') {
+    implementation('com.github.CDAFM-Robotics:CDALib:v0.2.0@aar') {
         transitive = true
     }
 }

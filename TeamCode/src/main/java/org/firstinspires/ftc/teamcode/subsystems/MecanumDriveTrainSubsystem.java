@@ -48,6 +48,11 @@ public class MecanumDriveTrainSubsystem extends Subsystem {
     }
 
     @Override
+    public void init_loop() {
+
+    }
+
+    @Override
     public void start() {
 
     }

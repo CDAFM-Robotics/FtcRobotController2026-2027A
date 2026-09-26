@@ -22,6 +22,9 @@ dependencyResolutionManagement {
         maven { url = 'https://jitpack.io' }
         // Pedro Pathing (com.pedropathing:*) and Panels (com.bylazar:*) are published here.
         maven { url = 'https://mymaven.bylazar.com/releases' }
+        // Dairy Foundation — serves dev.frozenmilk.sinister:Sloth, a transitive dependency of
+        // com.pedropathing:tuning (the AutoTune runtime) that is not on Maven Central.
+        maven { url = 'https://repo.dairy.foundation/releases' }
     }
 }
 
