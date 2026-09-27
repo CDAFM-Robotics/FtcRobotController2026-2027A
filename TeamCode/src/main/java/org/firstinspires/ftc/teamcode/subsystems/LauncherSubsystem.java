@@ -6,6 +6,7 @@ import com.cdarobotics.cdalib.devices.actuators.MotorDevice;
 import com.cdarobotics.cdalib.devices.actuators.ServoDevice;
 import com.cdarobotics.cdalib.subsystems.Subsystem;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import java.util.function.BooleanSupplier;
@@ -24,10 +25,6 @@ public class LauncherSubsystem extends Subsystem {
         pollenLauncherMotor = new MotorDevice(hardwareMap, pollenLauncherMotorName);
         // nectarLauncherMotor = new MotorDevice(hardwareMap, nectarLauncherMotorName);
 
-        pollenLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        // nectarLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT)
-
-        // launcherCRServo = new CRServoDevice(hardwareMap, launcherCRServoName);
     }
 
     public void setBindings(BindingManager bindingManager, BooleanSupplier pollenMotor, BooleanSupplier nectarMotor) {
@@ -39,6 +36,11 @@ public class LauncherSubsystem extends Subsystem {
 
     @Override
     public void init() {
+        pollenLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        pollenLauncherMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        // nectarLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT)
+
+        // launcherCRServo = new CRServoDevice(hardwareMap, launcherCRServoName);
 
     }
 
@@ -60,6 +62,7 @@ public class LauncherSubsystem extends Subsystem {
         else {
             pollenLauncherMotor.setPower(0);
         }
+        pollenLauncherMotor.update();
     }
 
     @Override
