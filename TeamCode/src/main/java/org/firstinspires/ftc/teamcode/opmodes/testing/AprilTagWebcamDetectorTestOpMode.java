@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.opmodes.testing;
 
-import com.cdarobotics.cdalib.opmodes.ModularOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -8,13 +7,10 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDir
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCompatibilityManager;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
-import java.util.List;
-
 @TeleOp(name = "apriltagWebcam", group = "0testing")
-public class apriltagWebcamDetectorTestOpMode extends LinearOpMode {
+public class AprilTagWebcamDetectorTestOpMode extends LinearOpMode {
 
     boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
 
