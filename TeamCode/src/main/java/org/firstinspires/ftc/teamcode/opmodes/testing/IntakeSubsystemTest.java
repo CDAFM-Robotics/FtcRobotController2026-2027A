@@ -17,32 +17,6 @@ public class IntakeSubsystemTest extends ModularOpMode {
 
         intakeSubsystem.setBindings(bindingManager, () -> gamepad1.right_bumper ? 1 : 0);
 
-
-        intakeSubsystem.setBindings(bindingManager,
-            new DoubleSupplier() {
-            @Override
-            public double getAsDouble() {
-                return gamepad1.right_bumper ? 1 : 0;
-            }
-        });
-
-        intakeSubsystem.setBindings(bindingManager,
-            new DoubleSupplier() {
-            private double intakeSpeed;
-
-            @Override
-            public double getAsDouble() {
-                if (gamepad1.rightBumperWasPressed()) {
-                    intakeSpeed += 0.1;
-                }
-                if (gamepad1.leftBumperWasPressed()) {
-                    intakeSpeed -= 0.1;
-                }
-
-                return intakeSpeed;
-            }
-        });
-
         registerSubsystem(intakeSubsystem);
     }
 }
