@@ -62,21 +62,24 @@ public class IntakeSubsystem extends Subsystem {
     public void start() {
 
     }
+    public boolean INTAKE_IS_EXTENDED = false;
 
     @Override
     public void update() {
         intakeMotor.setPower(bindingManager.checkAnalog("intakeSpeed"));
         intakeMotor.update();
 
-        if (bindingManager.checkBinding("extender")) {
+        if (bindingManager.checkBinding("extender")&!INTAKE_IS_EXTENDED) {
 
             extenderServo1.setPosition(POSITION_EXTENSION_SERVO_EXTENDED_LEFT);
             extenderServo2.setPosition(POSITION_EXTENSION_SERVO_EXTENDED_RIGHT);
-
+            INTAKE_IS_EXTENDED = true;
         }
-        else {
+        else if (bindingManager.checkBinding("extender")&INTAKE_IS_EXTENDED) {
+
             extenderServo1.setPosition(POSITION_EXTENSION_SERVO_RETRACTED_LEFT);
             extenderServo2.setPosition(POSITION_EXTENSION_SERVO_RETRACTED_RIGHT);
+            INTAKE_IS_EXTENDED = false;
         }
 
         extenderServo1.update();
