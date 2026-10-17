@@ -38,7 +38,7 @@ public class IntakeSubsystem extends Subsystem {
         this.bindingManager = bindingManager;
     }
     //----------------------EDIT THESE-----------------//
-    static double EXTENDED_POSITION = 1.0;
+    static double EXTENDED_POSITION = 0.625;
     static double RETRACTED_POSITION = 0.5;
     //-------------------------------------------------//
 
@@ -62,24 +62,23 @@ public class IntakeSubsystem extends Subsystem {
     public void start() {
 
     }
-    public boolean INTAKE_IS_EXTENDED = false;
 
     @Override
     public void update() {
         intakeMotor.setPower(bindingManager.checkAnalog("intakeSpeed"));
         intakeMotor.update();
 
-        if (bindingManager.checkBinding("extender")&!INTAKE_IS_EXTENDED) {
+        if (bindingManager.checkBinding("extender")) {
 
             extenderServo1.setPosition(POSITION_EXTENSION_SERVO_EXTENDED_LEFT);
             extenderServo2.setPosition(POSITION_EXTENSION_SERVO_EXTENDED_RIGHT);
-            INTAKE_IS_EXTENDED = true;
+
         }
-        else if (bindingManager.checkBinding("extender")&INTAKE_IS_EXTENDED) {
+        else {
 
             extenderServo1.setPosition(POSITION_EXTENSION_SERVO_RETRACTED_LEFT);
             extenderServo2.setPosition(POSITION_EXTENSION_SERVO_RETRACTED_RIGHT);
-            INTAKE_IS_EXTENDED = false;
+
         }
 
         extenderServo1.update();
