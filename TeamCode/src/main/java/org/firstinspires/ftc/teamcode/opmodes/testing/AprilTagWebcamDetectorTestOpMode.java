@@ -9,7 +9,7 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
-@TeleOp(name = "apriltagWebcam", group = "0testing")
+@TeleOp(name = "apriltagWebcam", group = "Testing")
 public class AprilTagWebcamDetectorTestOpMode extends LinearOpMode {
 
     boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
