@@ -14,7 +14,7 @@ public class MecanumDriveTest extends ModularOpMode {
     protected void preload() {
         md = new MecanumDriveTrainSubsystem(hardwareMap, "frontLeftDriveMotor", "backLeftDriveMotor", "frontRightDriveMotor", "backRightDriveMotor");
 
-        md.setControls(bindingManager, () -> -gamepad1.left_stick_y, () -> gamepad1.left_stick_x, () -> gamepad1.right_stick_x, () -> 1, () -> 0); //TODO do something with speed and heading
+        md.setBindings(bindingManager, () -> -gamepad1.left_stick_y, () -> gamepad1.left_stick_x, () -> gamepad1.right_stick_x, () -> 1, () -> 0); //TODO do something with speed and heading
 
         registerSubsystem(md);
     }
