@@ -25,7 +25,7 @@ public class MecanumDriveTrainSubsystem extends Subsystem {
         backRightDriveMotor = new MotorDevice(hardwareMap, backRightName);
     }
 
-    public void setControls(BindingManager bindingManager, DoubleSupplier drive, DoubleSupplier strafe, DoubleSupplier turn, DoubleSupplier speed, DoubleSupplier heading) {
+    public void setBindings(BindingManager bindingManager, DoubleSupplier drive, DoubleSupplier strafe, DoubleSupplier turn, DoubleSupplier speed, DoubleSupplier heading) {
         bindingManager.addAnalog("drive", drive);
         bindingManager.addAnalog("strafe", strafe);
         bindingManager.addAnalog("turn", turn);
