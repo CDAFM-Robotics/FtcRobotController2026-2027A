@@ -1,9 +1,13 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.cdarobotics.cdalib.bindings.BindingManager;
+import com.cdarobotics.cdalib.controllers.CompoundController;
+import com.cdarobotics.cdalib.controllers.FFController;
+import com.cdarobotics.cdalib.controllers.PIDController;
 import com.cdarobotics.cdalib.devices.actuators.CRServoDevice;
 import com.cdarobotics.cdalib.devices.actuators.MotorDevice;
 import com.cdarobotics.cdalib.devices.actuators.ServoDevice;
+import com.cdarobotics.cdalib.devices.actuators.VelocityMotorDevice;
 import com.cdarobotics.cdalib.subsystems.Subsystem;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -11,29 +15,45 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 public class LauncherSubsystem extends Subsystem {
 
-    private final MotorDevice pollenLauncherMotor;
-    private final MotorDevice nectarLauncherMotor;
-
-    // private final CRServoDevice launcherCRServo;
+    private final VelocityMotorDevice pollenLauncherMotor;
+    private final VelocityMotorDevice nectarLauncherMotor;
 
     private BindingManager bindingManager;
 
-    public LauncherSubsystem(HardwareMap hardwareMap, String pollenLauncherMotorName, String nectarLauncherMotorName, String launcherCRServoName) {
-        pollenLauncherMotor = new MotorDevice(hardwareMap, pollenLauncherMotorName);
-        nectarLauncherMotor = new MotorDevice(hardwareMap, nectarLauncherMotorName);
+    private final Telemetry telemetry;
 
+    public LauncherSubsystem(HardwareMap hardwareMap, Telemetry telemetry, String pollenLauncherMotorName, String nectarLauncherMotorName) {
+        pollenLauncherMotor = new VelocityMotorDevice(hardwareMap, pollenLauncherMotorName, new CompoundController(0, new PIDController(0, 0.001, 0, 0), new FFController(0, 0, 1/2700.0, 0)));
+        nectarLauncherMotor = new VelocityMotorDevice(hardwareMap, nectarLauncherMotorName, new CompoundController(0, new PIDController(0, 0.001, 0, 0), new FFController(0, 0, 1/2700.0, 0)));
+
+        this.telemetry = telemetry;
     }
-    public void setBindings(BindingManager bindingManager, BooleanSupplier pollenMotor, BooleanSupplier nectarMotor, BooleanSupplier launcherTuningIncrease, BooleanSupplier launcherTuningDecrease, BooleanSupplier selectLauncherTuning) {
+    public void setBindings(BindingManager bindingManager, BooleanSupplier pollenMotor, BooleanSupplier nectarMotor, BooleanSupplier increasePollenMotorVelocity, BooleanSupplier decreasePollenMotorVelocity, BooleanSupplier increaseNectarMotorVelocity, BooleanSupplier decreaseNectarMotorVelocity) {
         bindingManager.addBinding("pollenMotor", pollenMotor);
         bindingManager.addBinding("nectarMotor", nectarMotor);
-        bindingManager.addBinding("launcherTuningIncrease", launcherTuningIncrease);
-        bindingManager.addBinding("launcherTuningDecrease", launcherTuningDecrease);
-        bindingManager.addBinding("selectLauncherTuning", selectLauncherTuning);
+
+        bindingManager.addBinding("increasePollenMotorVelocity", increasePollenMotorVelocity);
+        bindingManager.addBinding("decreasePollenMotorVelocity", decreasePollenMotorVelocity);
+        bindingManager.addBinding("increaseNectarMotorVelocity", increaseNectarMotorVelocity);
+        bindingManager.addBinding("decreaseNectarMotorVelocity", decreaseNectarMotorVelocity);
+
+        this.bindingManager = bindingManager;
+    }
+
+    public void setBindings(BindingManager bindingManager, BooleanSupplier pollenMotor, BooleanSupplier nectarMotor) {
+        bindingManager.addBinding("pollenMotor", pollenMotor);
+        bindingManager.addBinding("nectarMotor", nectarMotor);
+
+        bindingManager.addBinding("increasePollenMotorVelocity", () -> false);
+        bindingManager.addBinding("decreasePollenMotorVelocity", () -> false);
+        bindingManager.addBinding("increaseNectarMotorVelocity", () -> false);
+        bindingManager.addBinding("decreaseNectarMotorVelocity", () -> false);
 
         this.bindingManager = bindingManager;
     }
@@ -43,11 +63,12 @@ public class LauncherSubsystem extends Subsystem {
         // pollenLauncherMotor
         pollenLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         pollenLauncherMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        // NectarLauncherMotor
+        pollenLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
+        // nectarLauncherMotor
         nectarLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         nectarLauncherMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-
-        // launcherCRServo = new CRServoDevice(hardwareMap, launcherCRServoName);
+        nectarLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
     }
 
@@ -60,59 +81,50 @@ public class LauncherSubsystem extends Subsystem {
     public void start() {
 
     }
-    boolean selectingTuning = false;
-    boolean tuningPollenLauncher = true;
-    boolean tuningChanging = false;
-    double pollenLauncherPower = 0.5;
-    double nectarLauncherPower = 0.5;
+
+    private double pollenLauncherVelocity = 1000;
+    private double nectarLauncherVelocity = 1000;
     
-    double tuningAmount = 0.05;
+    private final double LAUNCHER_MOTOR_VELOCITY_TUNING = 100;
 
     @Override
     public void update() {
-        //code for fine-tuning the launcher power
-        //could also integrate launcher angle or rotation tuning if applicable
-        if (bindingManager.checkBinding("selectLauncherTuning") & !selectingTuning) {
-            selectingTuning = true;
-            tuningPollenLauncher = !tuningPollenLauncher;
-        }
-        else {
-            selectingTuning = false;
-        }
-        if (bindingManager.checkBinding("launcherTuningIncrease")|bindingManager.checkBinding("launcherTuningDecrease") &!tuningChanging){
-            tuningChanging = true;
-            if (bindingManager.checkBinding("launcherTuningIncrease")&tuningPollenLauncher) {
-                pollenLauncherPower += tuningAmount;
-            }
-            else if (bindingManager.checkBinding("launcherTuningIncrease")){
-                nectarLauncherPower += tuningAmount;
-            }
-            else if (bindingManager.checkBinding("launcherTuningDecrease")&tuningPollenLauncher) {
-                pollenLauncherPower -= tuningAmount;
-            }
-            else{
-                nectarLauncherPower -= tuningAmount;
-            }
-        }
-        else{
-            tuningChanging = false;
-        }
-
-
         if (bindingManager.checkBinding("pollenMotor")) {
-            pollenLauncherMotor.setPower(pollenLauncherPower); //was 0.5
+            pollenLauncherMotor.setVelocity(pollenLauncherVelocity);
         }
         else {
-            pollenLauncherMotor.setPower(0);
+            pollenLauncherMotor.setVelocity(0);
         }
-        pollenLauncherMotor.update();
 
         if (bindingManager.checkBinding("nectarMotor")) {
-            nectarLauncherMotor.setPower(nectarLauncherPower);//starts at same value as pollen launcher
+            nectarLauncherMotor.setVelocity(nectarLauncherVelocity);
         }
         else {
-            nectarLauncherMotor.setPower(0);
+            nectarLauncherMotor.setVelocity(0);
         }
+
+        if (bindingManager.checkBinding("increasePollenMotorVelocity")) {
+            pollenLauncherVelocity += LAUNCHER_MOTOR_VELOCITY_TUNING;
+        }
+        if (bindingManager.checkBinding("decreasePollenMotorVelocity")) {
+            pollenLauncherVelocity -= LAUNCHER_MOTOR_VELOCITY_TUNING;
+        }
+        if (bindingManager.checkBinding("increaseNectarMotorVelocity")) {
+            nectarLauncherVelocity += LAUNCHER_MOTOR_VELOCITY_TUNING;
+        }
+        if (bindingManager.checkBinding("decreaseNectarMotorVelocity")) {
+            nectarLauncherVelocity -= LAUNCHER_MOTOR_VELOCITY_TUNING;
+        }
+
+        telemetry.addData("Pollen Launcher Target Velocity", pollenLauncherVelocity);
+        telemetry.addData("Nectar Launcher Target Velocity", nectarLauncherVelocity);
+        telemetry.addLine();
+        telemetry.addData("Pollen Launcher Actual Velocity", pollenLauncherMotor.getCurrentVelocity());
+        telemetry.addData("Nectar Launcher Actual Velocity", nectarLauncherMotor.getCurrentVelocity());
+
+
+        nectarLauncherMotor.update();
+        pollenLauncherMotor.update();
     }
 
     @Override
