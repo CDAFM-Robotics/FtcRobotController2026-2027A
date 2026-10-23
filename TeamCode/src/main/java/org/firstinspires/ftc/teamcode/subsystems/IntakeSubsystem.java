@@ -10,47 +10,47 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
 
 public class IntakeSubsystem extends Subsystem {
 
     private final MotorDevice intakeMotor;
 
-    private final ServoDevice extenderServo1;
-    private final ServoDevice extenderServo2;
+    private final ServoDevice leftExtenderServo;
+    private final ServoDevice rightExtenderServo;
 
     private BindingManager bindingManager;
 
     private final Telemetry telemetry;
 
-    public IntakeSubsystem(HardwareMap hardwareMap, Telemetry telemetry, String intakeMotorName, String extenderServoName1, String extenderServoName2) {
+    public IntakeSubsystem(HardwareMap hardwareMap, Telemetry telemetry, String intakeMotorName, String leftExtenderServoName, String rightExtenderServoName) {
         intakeMotor = new MotorDevice(hardwareMap, intakeMotorName);
-        extenderServo1 = new ServoDevice(hardwareMap, extenderServoName1);
-        extenderServo2 = new ServoDevice(hardwareMap, extenderServoName2);
+        leftExtenderServo = new ServoDevice(hardwareMap, leftExtenderServoName);
+        rightExtenderServo = new ServoDevice(hardwareMap, rightExtenderServoName);
         this.telemetry = telemetry;
     }
 
-    public void setBindings(BindingManager bindingManager, DoubleSupplier intakeSpeed, BooleanSupplier extender) {
-        bindingManager.addAnalog("intakeSpeed", intakeSpeed);
-        bindingManager.addBinding("extender", extender);
+    public void setBindings(BindingManager bindingManager, BooleanSupplier intake, BooleanSupplier extender) {
+        bindingManager.addBinding("intake", intake);
+        bindingManager.addBinding("extendIntake", extender);
 
 
         this.bindingManager = bindingManager;
     }
-    //----------------------EDIT THESE-----------------//
-    static double EXTENDED_POSITION = 0.625;
-    static double RETRACTED_POSITION = 0.5;
-    //-------------------------------------------------//
 
-    public static final double POSITION_EXTENSION_SERVO_EXTENDED_LEFT = 1-EXTENDED_POSITION;
-    public static final double POSITION_EXTENSION_SERVO_EXTENDED_RIGHT = EXTENDED_POSITION;
-    public static final double POSITION_EXTENSION_SERVO_RETRACTED_LEFT = 1-RETRACTED_POSITION;
-    public static final double POSITION_EXTENSION_SERVO_RETRACTED_RIGHT = RETRACTED_POSITION;
+
+    public static final double POSITION_EXTENSION_SERVO_INIT_LEFT = 0.505;
+    public static final double POSITION_EXTENSION_SERVO_RETRACTED_LEFT = 0.54;
+    public static final double POSITION_EXTENSION_SERVO_EXTENDED_LEFT = 0.505 + 0.173;
+
+    public static final double POSITION_EXTENSION_SERVO_INIT_RIGHT = 0.495;
+    public static final double POSITION_EXTENSION_SERVO_RETRACTED_RIGHT = 0.46;
+    public static final double POSITION_EXTENSION_SERVO_EXTENDED_RIGHT = 0.495 - 0.173;
 
     @Override
     public void init() {
         intakeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        extenderServo1.setPosition(0.5);
+        leftExtenderServo.setPosition(POSITION_EXTENSION_SERVO_INIT_LEFT);
+        rightExtenderServo.setPosition(POSITION_EXTENSION_SERVO_INIT_RIGHT);
     }
 
     @Override
@@ -65,24 +65,27 @@ public class IntakeSubsystem extends Subsystem {
 
     @Override
     public void update() {
-        intakeMotor.setPower(bindingManager.checkAnalog("intakeSpeed"));
-        intakeMotor.update();
 
-        if (bindingManager.checkBinding("extender")) {
-
-            extenderServo1.setPosition(POSITION_EXTENSION_SERVO_EXTENDED_LEFT);
-            extenderServo2.setPosition(POSITION_EXTENSION_SERVO_EXTENDED_RIGHT);
-
+        if (bindingManager.checkBinding("intake")) {
+            intakeMotor.setPower(1);
         }
         else {
-
-            extenderServo1.setPosition(POSITION_EXTENSION_SERVO_RETRACTED_LEFT);
-            extenderServo2.setPosition(POSITION_EXTENSION_SERVO_RETRACTED_RIGHT);
-
+            intakeMotor.setPower(0);
         }
 
-        extenderServo1.update();
-        extenderServo2.update();
+        if (bindingManager.checkBinding("extendIntake")) {
+            leftExtenderServo.setPosition(POSITION_EXTENSION_SERVO_EXTENDED_LEFT);
+            rightExtenderServo.setPosition(POSITION_EXTENSION_SERVO_EXTENDED_RIGHT);
+        }
+        else {
+            leftExtenderServo.setPosition(POSITION_EXTENSION_SERVO_RETRACTED_LEFT);
+            rightExtenderServo.setPosition(POSITION_EXTENSION_SERVO_RETRACTED_RIGHT);
+        }
+
+        intakeMotor.update();
+
+        leftExtenderServo.update();
+        rightExtenderServo.update();
     }
 
     @Override

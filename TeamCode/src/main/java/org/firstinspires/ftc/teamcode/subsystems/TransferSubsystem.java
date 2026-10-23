@@ -12,7 +12,7 @@ import java.util.function.DoubleSupplier;
 
 public class TransferSubsystem extends Subsystem {
 
-    private static final double TRANSFER_MOTOR_POWER = 0.5;
+    private static final double TRANSFER_MOTOR_POWER = 1;
     private static final double TRANSFER_SERVO_POWER = 1;
 
 

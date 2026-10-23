@@ -62,14 +62,11 @@ public class LauncherSubsystem extends Subsystem {
     public void init() {
         // pollenLauncherMotor
         pollenLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        pollenLauncherMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        pollenLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        pollenLauncherMotor.setDirection(DcMotorSimple.Direction.FORWARD);
 
         // nectarLauncherMotor
         nectarLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        nectarLauncherMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        nectarLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-
+        nectarLauncherMotor.setDirection(DcMotorSimple.Direction.FORWARD);
     }
 
     @Override
@@ -82,8 +79,8 @@ public class LauncherSubsystem extends Subsystem {
 
     }
 
-    private double pollenLauncherVelocity = 1000;
-    private double nectarLauncherVelocity = 1000;
+    private double pollenLauncherVelocity = 2000;
+    private double nectarLauncherVelocity = 2000;
     
     private final double LAUNCHER_MOTOR_VELOCITY_TUNING = 100;
 
