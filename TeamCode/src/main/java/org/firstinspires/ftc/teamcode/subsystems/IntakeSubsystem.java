@@ -6,10 +6,13 @@ import com.cdarobotics.cdalib.devices.actuators.ServoDevice;
 import com.cdarobotics.cdalib.subsystems.Subsystem;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
 
 public class IntakeSubsystem extends Subsystem {
 
@@ -32,18 +35,25 @@ public class IntakeSubsystem extends Subsystem {
     public void setBindings(BindingManager bindingManager, BooleanSupplier intake, BooleanSupplier extender) {
         bindingManager.addBinding("intake", intake);
         bindingManager.addBinding("extendIntake", extender);
-
-
         this.bindingManager = bindingManager;
     }
 
+    public void setBindings(BindingManager bindingManager, DoubleSupplier intakeSpeed, BooleanSupplier extender) {
+        bindingManager.addAnalog("intakeSpeed", intakeSpeed);
+        bindingManager.addBinding("extendIntake", extender);
+        this.bindingManager = bindingManager;
+        useAnalogIntake = true;
+    }
+
+    private boolean useAnalogIntake = false;
+
 
     public static final double POSITION_EXTENSION_SERVO_INIT_LEFT = 0.505;
-    public static final double POSITION_EXTENSION_SERVO_RETRACTED_LEFT = 0.54;
+    public static final double POSITION_EXTENSION_SERVO_RETRACTED_LEFT = 0.53;
     public static final double POSITION_EXTENSION_SERVO_EXTENDED_LEFT = 0.505 + 0.173;
 
     public static final double POSITION_EXTENSION_SERVO_INIT_RIGHT = 0.495;
-    public static final double POSITION_EXTENSION_SERVO_RETRACTED_RIGHT = 0.46;
+    public static final double POSITION_EXTENSION_SERVO_RETRACTED_RIGHT = 0.47;
     public static final double POSITION_EXTENSION_SERVO_EXTENDED_RIGHT = 0.495 - 0.173;
 
     @Override
@@ -66,10 +76,11 @@ public class IntakeSubsystem extends Subsystem {
     @Override
     public void update() {
 
-        if (bindingManager.checkBinding("intake")) {
+        if (useAnalogIntake) {
+            intakeMotor.setPower(bindingManager.checkAnalog("intakeSpeed"));
+        } else if (bindingManager.checkBinding("intake")) {
             intakeMotor.setPower(1);
-        }
-        else {
+        } else {
             intakeMotor.setPower(0);
         }
 

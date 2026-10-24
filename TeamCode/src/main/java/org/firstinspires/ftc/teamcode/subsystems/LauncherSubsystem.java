@@ -63,10 +63,13 @@ public class LauncherSubsystem extends Subsystem {
         // pollenLauncherMotor
         pollenLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         pollenLauncherMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+        pollenLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         // nectarLauncherMotor
         nectarLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         nectarLauncherMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+        nectarLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
     }
 
     @Override
@@ -79,10 +82,20 @@ public class LauncherSubsystem extends Subsystem {
 
     }
 
-    private double pollenLauncherVelocity = 2000;
-    private double nectarLauncherVelocity = 2000;
+    private double pollenLauncherVelocity = 1550; // ~3321 RPM (ticks/sec = RPM / 60 * 28)
+    private double nectarLauncherVelocity = 1820; // ~3900 RPM (ticks/sec = RPM / 60 * 28)
+
+    public double getPollenTargetVelocity() { return pollenLauncherVelocity; }
+    public double getPollenCurrentVelocity() { return pollenLauncherMotor.getCurrentVelocity(); }
+    public double getNectarTargetVelocity() { return nectarLauncherVelocity; }
+    public double getNectarCurrentVelocity() { return nectarLauncherMotor.getCurrentVelocity(); }
     
-    private final double LAUNCHER_MOTOR_VELOCITY_TUNING = 100;
+    private final double LAUNCHER_MOTOR_VELOCITY_TUNING = 50;
+
+    private boolean prevIncreasePollenVelocity = false;
+    private boolean prevDecreasePollenVelocity = false;
+    private boolean prevIncreaseNectarVelocity = false;
+    private boolean prevDecreaseNectarVelocity = false;
 
     @Override
     public void update() {
@@ -100,18 +113,20 @@ public class LauncherSubsystem extends Subsystem {
             nectarLauncherMotor.setVelocity(0);
         }
 
-        if (bindingManager.checkBinding("increasePollenMotorVelocity")) {
-            pollenLauncherVelocity += LAUNCHER_MOTOR_VELOCITY_TUNING;
-        }
-        if (bindingManager.checkBinding("decreasePollenMotorVelocity")) {
-            pollenLauncherVelocity -= LAUNCHER_MOTOR_VELOCITY_TUNING;
-        }
-        if (bindingManager.checkBinding("increaseNectarMotorVelocity")) {
-            nectarLauncherVelocity += LAUNCHER_MOTOR_VELOCITY_TUNING;
-        }
-        if (bindingManager.checkBinding("decreaseNectarMotorVelocity")) {
-            nectarLauncherVelocity -= LAUNCHER_MOTOR_VELOCITY_TUNING;
-        }
+        boolean increasePollenNow = bindingManager.checkBinding("increasePollenMotorVelocity");
+        boolean decreasePollenNow = bindingManager.checkBinding("decreasePollenMotorVelocity");
+        boolean increaseNectarNow = bindingManager.checkBinding("increaseNectarMotorVelocity");
+        boolean decreaseNectarNow = bindingManager.checkBinding("decreaseNectarMotorVelocity");
+
+        if (increasePollenNow && !prevIncreasePollenVelocity) pollenLauncherVelocity += LAUNCHER_MOTOR_VELOCITY_TUNING;
+        if (decreasePollenNow && !prevDecreasePollenVelocity) pollenLauncherVelocity -= LAUNCHER_MOTOR_VELOCITY_TUNING;
+        if (increaseNectarNow && !prevIncreaseNectarVelocity) nectarLauncherVelocity += LAUNCHER_MOTOR_VELOCITY_TUNING;
+        if (decreaseNectarNow && !prevDecreaseNectarVelocity) nectarLauncherVelocity -= LAUNCHER_MOTOR_VELOCITY_TUNING;
+
+        prevIncreasePollenVelocity = increasePollenNow;
+        prevDecreasePollenVelocity = decreasePollenNow;
+        prevIncreaseNectarVelocity = increaseNectarNow;
+        prevDecreaseNectarVelocity = decreaseNectarNow;
 
         telemetry.addData("Pollen Launcher Target Velocity", pollenLauncherVelocity);
         telemetry.addData("Nectar Launcher Target Velocity", nectarLauncherVelocity);
