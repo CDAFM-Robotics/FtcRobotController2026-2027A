@@ -69,8 +69,8 @@ public class MecanumDriveTrainSubsystem extends Subsystem {
 
         double heading = bindingManager.checkAnalog("heading");
 
-        double rotX = x * Math.cos(heading) - y * Math.sin(heading);
-        double rotY = x * Math.sin(heading) + y * Math.cos(heading);
+        double rotX = x * Math.cos(-heading) - y * Math.sin(-heading);
+        double rotY = x * Math.sin(-heading) + y * Math.cos(-heading);
 
         // put strafing factors here
         rotX = rotX * 1;
