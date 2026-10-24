@@ -26,7 +26,7 @@ public class LocalizerSubsystem extends Subsystem {
 
     @Override
     public void init() {
-
+        pinpoint.update();
     }
 
     @Override

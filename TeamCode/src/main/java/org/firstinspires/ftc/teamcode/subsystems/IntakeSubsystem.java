@@ -61,6 +61,9 @@ public class IntakeSubsystem extends Subsystem {
         intakeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         leftExtenderServo.setPosition(POSITION_EXTENSION_SERVO_INIT_LEFT);
         rightExtenderServo.setPosition(POSITION_EXTENSION_SERVO_INIT_RIGHT);
+
+        leftExtenderServo.update();
+        rightExtenderServo.update();
     }
 
     @Override
