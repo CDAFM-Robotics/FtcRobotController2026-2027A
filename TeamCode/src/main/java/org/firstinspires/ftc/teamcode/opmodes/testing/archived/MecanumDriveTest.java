@@ -1,11 +1,13 @@
-package org.firstinspires.ftc.teamcode.opmodes.testing;
+package org.firstinspires.ftc.teamcode.opmodes.testing.archived;
 
 import com.cdarobotics.cdalib.opmodes.ModularOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.subsystems.MecanumDriveTrainSubsystem;
 
 @TeleOp(name = "Mecanum Drive Test", group = "Testing")
+@Disabled
 public class MecanumDriveTest extends ModularOpMode {
 
     MecanumDriveTrainSubsystem md;
