@@ -29,10 +29,10 @@ public class WholeBotTest extends ModularOpMode {
         launcherSubsystem.setBindings(bindingManager,
                 () -> gamepad2.right_trigger > 0.1,
                 () -> gamepad2.right_trigger > 0.1,
-                () -> gamepad2.dpad_up,
-                () -> gamepad2.dpad_down,
-                () -> false,
-                () -> false);
+                () -> gamepad2.dpadUpWasPressed(),
+                () -> gamepad2.dpadDownWasPressed(),
+                () -> gamepad2.dpadUpWasPressed(),
+                () -> gamepad2.dpadDownWasPressed());
         registerSubsystem(launcherSubsystem);
 
         transferSubsystem = new TransferSubsystem(
@@ -40,8 +40,8 @@ public class WholeBotTest extends ModularOpMode {
         transferSubsystem.setBindings(bindingManager,
                 () -> transferShouldRun() || transferNudgeToggle,
                 () -> transferShouldRun() || transferNudgeToggle,
-                () -> gamepad2.dpad_right,
-                () -> gamepad2.dpad_left);
+                () -> gamepad2.dpadRightWasPressed(),
+                () -> gamepad2.dpadLeftWasPressed());
         registerSubsystem(transferSubsystem);
 
         IntakeSubsystem intakeSubsystem = new IntakeSubsystem(

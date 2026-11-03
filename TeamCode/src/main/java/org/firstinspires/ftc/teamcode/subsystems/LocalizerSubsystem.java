@@ -20,6 +20,10 @@ public class LocalizerSubsystem extends Subsystem {
         pinpoint = new PinpointDevice(hardwareMap, pinpointName, pinpointOffsetX, pinpointOffsetY, distanceUnit);
     }
 
+    public LocalizerSubsystem(HardwareMap hardwareMap, String pinpointName) {
+        pinpoint = new PinpointDevice(hardwareMap, pinpointName, DEFAULT_PINPOINT_OFFSET_X_CM, DEFAULT_PINPOINT_OFFSET_Y_CM, DistanceUnit.CM);
+    }
+
     public void setBindings(BindingManager bindingManager) {
         bindingManager.addAnalog("heading", pinpoint::getHeading);
     }
