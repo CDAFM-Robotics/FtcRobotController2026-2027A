@@ -303,9 +303,20 @@ public class HiveVisionSubsystem {
         telemetry.addData("Camera state", visionPortal.getCameraState());
         telemetry.addData("Raw detections", aprilTag.getDetections().size());
 
-        // Cluster names — key diagnostic: shows what the SDK calls each cluster
-        if (!lastClusterNames.isEmpty())
-            telemetry.addData("Cluster names", lastClusterNames.toString());
+        // Cluster names + how the code classified each one.
+        // If "?? UNMATCHED" appears, the name doesn't contain "audience" or "scoring"
+        // and you need to update the cluster name matching in takeSample().
+        if (!lastClusterNames.isEmpty()) {
+            for (String cn : lastClusterNames) {
+                String lower = cn.toLowerCase();
+                String category = lower.contains("audience") ? "→ AUDIENCE face"
+                        : lower.contains("scoring")         ? "→ NON-AUDIENCE face"
+                        : "?? UNMATCHED — update takeSample()";
+                telemetry.addData("Cluster: " + cn, category);
+            }
+        } else {
+            telemetry.addLine("No clusters detected");
+        }
 
         telemetry.addData("Alliance", alliance);
         telemetry.addData("Robot side", robotSide);

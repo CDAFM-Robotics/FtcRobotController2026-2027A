@@ -18,7 +18,7 @@ public class TransferSubsystem extends Subsystem {
 
     private static final double TRANSFER_POWER_STEP = 0.1;
     private static final double TRANSFER_SERVO_POWER = 1;
-    private static final double AUTO_NUDGE_POWER = 0.3; // power when color sensor triggers auto-nudge
+    private static final double AUTO_NUDGE_POWER = 0.5; // power when color sensor triggers auto-nudge
 
     private double transferMotorPower = 1.0;
 
