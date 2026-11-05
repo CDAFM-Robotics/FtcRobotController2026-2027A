@@ -2,7 +2,10 @@ package org.firstinspires.ftc.teamcode.pedropathing;
 
 import com.pedropathing.algorithm.Foresight;
 import com.pedropathing.algorithm.ForesightConfig;
+import com.pedropathing.controllers.Controller;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.math.Matrix;
+import com.pedropathing.math.Vector2D;
 import com.pedropathing.revhub.drivetrains.Mecanum;
 import com.pedropathing.revhub.drivetrains.MecanumConfig;
 import com.pedropathing.revhub.localizers.PinpointConfig;
@@ -47,8 +50,8 @@ public class Constants {
         c.backRightName.set("backRightDriveMotor");
 
         c.frontLeftDirection.set(DcMotorSimple.Direction.REVERSE);
-        c.backLeftDirection.set(DcMotorSimple.Direction.REVERSE);
         c.frontRightDirection.set(DcMotorSimple.Direction.FORWARD);
+        c.backLeftDirection.set(DcMotorSimple.Direction.REVERSE);
         c.backRightDirection.set(DcMotorSimple.Direction.FORWARD);
     });
 
@@ -67,14 +70,15 @@ public class Constants {
         c.name.set("pinpoint");
         c.podType.set(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
 
-        c.xPodOffset.set(0.0);
-        c.yPodOffset.set(0.0);
-        c.xPodDirection.set(GoBildaPinpointDriver.EncoderDirection.FORWARD);
-        c.yPodDirection.set(GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        c.xPodOffset.set(5.610435666061762);
+        c.yPodOffset.set(-2.7825483186977116);
 
+        c.xPodDirection.set(GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        c.yPodDirection.set(GoBildaPinpointDriver.EncoderDirection.REVERSED);
         c.globalDistanceUnit.set(DistanceUnit.INCH);
         c.offsetUnits.set(DistanceUnit.INCH);
     });
+
 
     /**
      * Following algorithm: Foresight. <b>Not tuned yet — this block is intentionally empty.</b>
@@ -89,9 +93,31 @@ public class Constants {
      * <p>Run the Foresight Tuner and paste its generated block in place of this lambda body.
      * {@link #createAlgorithm()} fails with a readable message until you do.
      */
-    public static ForesightConfig foresightConfig = new ForesightConfig(c -> {
-        // Paste the Foresight Tuner's output here.
-    });
+    public static ForesightConfig foresightConfig = new ForesightConfig(
+        c -> {
+            Controller primaryTranslationalForward = Controller.proportional(0.3710824438105774);
+            Controller secondaryTranslationalForward = Controller.proportional(0.13710504748249328);
+            Controller primaryTranslationalLateral = Controller.proportional(0.7367369694984635);
+            Controller secondaryTranslationalLateral = Controller.proportional(0.27220462425529546);
+
+            c.forwardTranslational.set(Controller.piecewise(secondaryTranslationalForward).put(2.5, primaryTranslationalForward));
+            c.strafeTranslational.set(Controller.piecewise(secondaryTranslationalLateral).put(2.5, primaryTranslationalLateral));
+
+            c.coast.set(Controller.proportionalFeedforward(0.01293544543489575));
+            c.brake.set(Controller.proportionalFeedforward(0.010995128619661386));
+
+            c.headingFeedback.set(Controller.proportional(6.797493189222708));
+            c.headingBrakeCoefficients.set(Vector2D.cartesian(0.04837072145477509, 0.006862230224386472));
+
+            c.linearBrakeCoefficients.set(Matrix.diag(0.09781235771495, 0.06757640510201267));
+            c.quadraticBrakeCoefficients.set(Matrix.diag(0.0013705080948031507, 0.001416547800078727));
+
+            c.maxAchievableForwardVelocity.set(74.05187288426968);
+            c.maxAchievableStrafeVelocity.set(55.64529252350862);
+            c.naturalForwardDeceleration.set(36.116698954253856);
+            c.naturalStrafeDeceleration.set(69.0924421172708);
+        }
+    );
 
     public static Mecanum createDrivetrain(HardwareMap hardwareMap) {
         return new Mecanum(hardwareMap, drivetrainConfig);
@@ -109,13 +135,6 @@ public class Constants {
      * values in one block, so probing one of them is enough to tell "never tuned" from "tuned".
      */
     public static Foresight createAlgorithm() {
-        try {
-            foresightConfig.maxAchievableForwardVelocity.get();
-        } catch (IllegalStateException e) {
-            throw new IllegalStateException(
-                    "Foresight has not been tuned. Run the Foresight Tuner in AutoTune and paste "
-                            + "its generated block into Constants.foresightConfig.", e);
-        }
         return new Foresight(foresightConfig);
     }
 
