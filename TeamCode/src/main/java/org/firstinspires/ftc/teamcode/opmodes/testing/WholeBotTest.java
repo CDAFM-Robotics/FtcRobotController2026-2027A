@@ -6,6 +6,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.LauncherSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.LocalizerSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.MecanumDriveTrainSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.TransferSubsystem;
 
 @TeleOp(name = "Whole Bot Test", group = "Testing")
@@ -14,6 +16,8 @@ public class WholeBotTest extends ModularOpMode {
     private LauncherSubsystem launcherSubsystem;
     private TransferSubsystem transferSubsystem;
     private IntakeSubsystem intakeSubsystem;
+    private LocalizerSubsystem localizerSubsystem;
+    private MecanumDriveTrainSubsystem mecanumDriveTrainSubsystem;
 
     private static final double RPM_READY_THRESHOLD = 0.99;
 
@@ -38,8 +42,8 @@ public class WholeBotTest extends ModularOpMode {
                 () -> gamepad2.right_trigger > 0.1,
                 () -> gamepad2.dpadUpWasPressed(),
                 () -> gamepad2.dpadDownWasPressed(),
-                () -> gamepad2.dpadUpWasPressed(),
-                () -> gamepad2.dpadDownWasPressed());
+                () -> gamepad2.yWasPressed(),
+                () -> gamepad2.aWasPressed());
         registerSubsystem(launcherSubsystem);
 
         transferSubsystem = new TransferSubsystem(
@@ -59,6 +63,20 @@ public class WholeBotTest extends ModularOpMode {
                     : (macroState != MacroState.IDLE ? 1.0 : 0.0)),
                 () -> extenderToggle || macroState == MacroState.EXTENDING || macroState == MacroState.GRABBING);
         registerSubsystem(intakeSubsystem);
+
+        localizerSubsystem = new LocalizerSubsystem(hardwareMap, "pinpoint");
+        localizerSubsystem.setBindings(bindingManager);
+        registerSubsystem(localizerSubsystem);
+
+        mecanumDriveTrainSubsystem = new MecanumDriveTrainSubsystem(
+                hardwareMap, "frontLeftDriveMotor", "backLeftDriveMotor", "frontRightDriveMotor", "backRightDriveMotor");
+        mecanumDriveTrainSubsystem.setBindings(bindingManager,
+                () -> -gamepad1.left_stick_y,
+                () -> gamepad1.left_stick_x,
+                () -> gamepad1.right_stick_x,
+                () -> 1,
+                localizerSubsystem::getHeading);
+        registerSubsystem(mecanumDriveTrainSubsystem);
     }
 
     private boolean isIntakeRunning() {
@@ -124,6 +142,9 @@ public class WholeBotTest extends ModularOpMode {
                 break;
         }
 
+        double x = localizerSubsystem.getX();
+        double y = localizerSubsystem.getY();
+
         // Telemetry
         double actualVelocity = launcherSubsystem.getPollenCurrentVelocity();
         double targetVelocity = launcherSubsystem.getPollenTargetVelocity();
@@ -149,6 +170,8 @@ public class WholeBotTest extends ModularOpMode {
         } else {
             telemetry.addData("Distance sensor", "not found");
         }
+        double distance2 = transferSubsystem.getDistance2();
+        telemetry.addData("Distance2 (cm)", Double.isNaN(distance2) ? "not found" : String.format("%.1f", distance2));
         telemetry.addLine("gp2 RT: shoot | dpad up/down: pollen vel +/-20 | Y/A: nectar vel +/-20 | dpad left/right: transfer power -/+0.1");
         telemetry.addData("Transfer nudge", transferNudgeToggle ? "ON" : "off");
         telemetry.addLine("gp1 RT: intake fwd | gp1 LT: intake rev | gp1 RB: transfer nudge | gp1 LB: toggle extender | gp1 Y: intake macro");

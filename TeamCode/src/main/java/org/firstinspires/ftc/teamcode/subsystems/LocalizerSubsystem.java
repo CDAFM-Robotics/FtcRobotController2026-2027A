@@ -28,6 +28,15 @@ public class LocalizerSubsystem extends Subsystem {
         bindingManager.addAnalog("heading", pinpoint::getHeading);
     }
 
+    /** X position in inches */
+    public double getX() { return pinpoint.getX(); }
+
+    /** Y position in inches */
+    public double getY() { return pinpoint.getY(); }
+
+    /** Heading in radians */
+    public double getHeading() { return pinpoint.getHeading(); }
+
     @Override
     public void init() {
         pinpoint.update();

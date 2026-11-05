@@ -27,7 +27,9 @@ public class TransferSubsystem extends Subsystem {
     private final CRServoDevice rightTransferServo;
     private final NormalizedColorSensor colorSensor;
     private final DistanceSensor distanceSensor;
-    private static final double GAME_ELEMENT_DISTANCE_CM = 5.0;
+    private final DistanceSensor distanceSensor2;
+    private static final double GAME_ELEMENT_DISTANCE_CM  = 5.0;
+    private static final double GAME_ELEMENT_DISTANCE2_CM = 6.0;
 
     private BindingManager bindingManager;
 
@@ -38,17 +40,27 @@ public class TransferSubsystem extends Subsystem {
         colorSensor = hardwareMap.tryGet(NormalizedColorSensor.class, "colorSensor1");
         if (colorSensor != null) colorSensor.setGain(10);
         distanceSensor = (colorSensor instanceof DistanceSensor) ? (DistanceSensor) colorSensor : null;
+
+        NormalizedColorSensor cs2 = hardwareMap.tryGet(NormalizedColorSensor.class, "colorSensor2");
+        distanceSensor2 = (cs2 instanceof DistanceSensor) ? (DistanceSensor) cs2 : null;
     }
 
     public boolean hasGameElement() {
-        if (distanceSensor == null) return false;
-        double distance = distanceSensor.getDistance(DistanceUnit.CM);
-        return distance < GAME_ELEMENT_DISTANCE_CM;
+        boolean sensor1 = distanceSensor != null
+                && distanceSensor.getDistance(DistanceUnit.CM) < GAME_ELEMENT_DISTANCE_CM;
+        boolean sensor2 = distanceSensor2 != null
+                && distanceSensor2.getDistance(DistanceUnit.CM) < GAME_ELEMENT_DISTANCE2_CM;
+        return sensor1 || sensor2;
     }
 
     public double getDistance() {
         if (distanceSensor == null) return Double.NaN;
         return distanceSensor.getDistance(DistanceUnit.CM);
+    }
+
+    public double getDistance2() {
+        if (distanceSensor2 == null) return Double.NaN;
+        return distanceSensor2.getDistance(DistanceUnit.CM);
     }
 
     public NormalizedRGBA getColorReading() {
