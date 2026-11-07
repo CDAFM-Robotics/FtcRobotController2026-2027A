@@ -3,13 +3,12 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.cdarobotics.cdalib.bindings.BindingManager;
 import com.cdarobotics.cdalib.devices.actuators.CRServoDevice;
 import com.cdarobotics.cdalib.devices.actuators.MotorDevice;
+import com.cdarobotics.cdalib.devices.sensors.RevColorSensorV3Device;
 import com.cdarobotics.cdalib.subsystems.Subsystem;
+import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
@@ -25,9 +24,12 @@ public class TransferSubsystem extends Subsystem {
     private final MotorDevice transferMotor;
     private final CRServoDevice leftTransferServo;
     private final CRServoDevice rightTransferServo;
-    private final NormalizedColorSensor colorSensor;
-    private final DistanceSensor distanceSensor;
-    private final DistanceSensor distanceSensor2;
+    // Both sensors go through CDALib's RevColorSensorV3Device: one 14-byte I2C read per sensor per loop in update(),
+    // after which distance and colour are cached. The stock NormalizedColorSensor/DistanceSensor path cost one I2C
+    // transaction per getDistance()/getNormalizedColors() call, and this subsystem was issuing up to eleven per loop.
+    private final RevColorSensorV3Device colorSensor1;
+    private final RevColorSensorV3Device colorSensor2;
+    private boolean sensorsRead = false;   // cached values are meaningless before the first update()
     private static final double GAME_ELEMENT_DISTANCE_CM  = 5.0;
     private static final double GAME_ELEMENT_DISTANCE2_CM = 6.0;
 
@@ -37,35 +39,37 @@ public class TransferSubsystem extends Subsystem {
         transferMotor = new MotorDevice(hardwareMap, transferMotorName);
         leftTransferServo = new CRServoDevice(hardwareMap, leftTransferServoName);
         rightTransferServo = new CRServoDevice(hardwareMap, rightTransferServoName);
-        colorSensor = hardwareMap.tryGet(NormalizedColorSensor.class, "colorSensor1");
-        if (colorSensor != null) colorSensor.setGain(10);
-        distanceSensor = (colorSensor instanceof DistanceSensor) ? (DistanceSensor) colorSensor : null;
+        RevColorSensorV3 cs1 = hardwareMap.tryGet(RevColorSensorV3.class, "colorSensor1");
+        colorSensor1 = (cs1 == null) ? null : new RevColorSensorV3Device(cs1).setGain(10);
 
-        NormalizedColorSensor cs2 = hardwareMap.tryGet(NormalizedColorSensor.class, "colorSensor2");
-        distanceSensor2 = (cs2 instanceof DistanceSensor) ? (DistanceSensor) cs2 : null;
+        RevColorSensorV3 cs2 = hardwareMap.tryGet(RevColorSensorV3.class, "colorSensor2");
+        colorSensor2 = (cs2 == null) ? null : new RevColorSensorV3Device(cs2);
     }
 
+    /** Cached from this loop's update(); free to call as often as you like. */
     public boolean hasGameElement() {
-        boolean sensor1 = distanceSensor != null
-                && distanceSensor.getDistance(DistanceUnit.CM) < GAME_ELEMENT_DISTANCE_CM;
-        boolean sensor2 = distanceSensor2 != null
-                && distanceSensor2.getDistance(DistanceUnit.CM) < GAME_ELEMENT_DISTANCE2_CM;
+        if (!sensorsRead) return false;
+        boolean sensor1 = colorSensor1 != null && colorSensor1.getDistanceCm() < GAME_ELEMENT_DISTANCE_CM;
+        boolean sensor2 = colorSensor2 != null && colorSensor2.getDistanceCm() < GAME_ELEMENT_DISTANCE2_CM;
         return sensor1 || sensor2;
     }
 
+    /** Cached distance from colorSensor1 in cm, or NaN if absent or not yet read. */
     public double getDistance() {
-        if (distanceSensor == null) return Double.NaN;
-        return distanceSensor.getDistance(DistanceUnit.CM);
+        if (colorSensor1 == null || !sensorsRead) return Double.NaN;
+        return colorSensor1.getDistanceCm();
     }
 
+    /** Cached distance from colorSensor2 in cm, or NaN if absent or not yet read. */
     public double getDistance2() {
-        if (distanceSensor2 == null) return Double.NaN;
-        return distanceSensor2.getDistance(DistanceUnit.CM);
+        if (colorSensor2 == null || !sensorsRead) return Double.NaN;
+        return colorSensor2.getDistanceCm();
     }
 
+    /** Cached normalized colour from colorSensor1, or null if absent. */
     public NormalizedRGBA getColorReading() {
-        if (colorSensor == null) return null;
-        return colorSensor.getNormalizedColors();
+        if (colorSensor1 == null) return null;
+        return colorSensor1.getColors();
     }
 
     public void setBindings(BindingManager bindingManager, BooleanSupplier transferServo, BooleanSupplier transferMotor) {
@@ -107,6 +111,12 @@ public class TransferSubsystem extends Subsystem {
 
     @Override
     public void update() {
+        // One I2C read per sensor per loop; every getter below (and the OpMode's binding lambdas and telemetry)
+        // reads the cached result.
+        if (colorSensor1 != null) colorSensor1.update();
+        if (colorSensor2 != null) colorSensor2.update();
+        sensorsRead = true;
+
         boolean increaseNow = bindingManager.checkBinding("increaseTransferPower");
         boolean decreaseNow = bindingManager.checkBinding("decreaseTransferPower");
         if (increaseNow && !prevIncreaseTransferPower)
