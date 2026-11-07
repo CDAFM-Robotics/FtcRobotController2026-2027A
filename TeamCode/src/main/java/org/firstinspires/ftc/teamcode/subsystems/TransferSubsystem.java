@@ -10,6 +10,7 @@ import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynchSimple;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
@@ -26,10 +27,16 @@ public class TransferSubsystem extends Subsystem {
     public static boolean colorSensorFast400k = true;
 
     private static final double TRANSFER_POWER_STEP = 0.1;
-    private static final double TRANSFER_SERVO_POWER = 1;
-    private static final double AUTO_NUDGE_POWER = 0.5; // power when color sensor triggers auto-nudge
+    // Feed speed experiment (Nov 6): balls that touch in the transfer strike the flywheel 40-140 ms apart, faster than
+    // the ~250 ms the wheel needs to recover and faster than the per-shot gate can react. Spacing in time is one ball
+    // diameter over the transfer's linear speed, so the transfer has to run several times slower, around 0.3 m/s,
+    // for the gate to catch the second ball. Motor power is the dpad adjustment; the servos were fixed at full power,
+    // which would have defeated slowing the motor alone. All three are Panels fields now.
+    public static double transferMotorPowerDefault = 1.0;   // starting value for the dpad-adjusted motor power
+    public static double transferServoPower = 1.0;          // the two CR feed servos
+    public static double autoNudgePower = 0.5;              // power when a ball is detected and nothing else is running
 
-    private double transferMotorPower = 1.0;
+    private double transferMotorPower = transferMotorPowerDefault;
 
     private final MotorDevice transferMotor;
     private final CRServoDevice leftTransferServo;
@@ -128,6 +135,8 @@ public class TransferSubsystem extends Subsystem {
     @Override
     public void init() {
         transferMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        // BRAKE so a queued ball stops when the feed gate closes instead of coasting on into the flywheel.
+        transferMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightTransferServo.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
@@ -169,17 +178,17 @@ public class TransferSubsystem extends Subsystem {
         if (manualRun) {
             transferMotor.setPower(transferMotorPower);
         } else if (elementDetected) {
-            transferMotor.setPower(AUTO_NUDGE_POWER);
+            transferMotor.setPower(autoNudgePower);
         } else {
             transferMotor.setPower(0);
         }
 
         if (bindingManager.checkBinding("transferServo")) {
-            leftTransferServo.setPower(TRANSFER_SERVO_POWER);
-            rightTransferServo.setPower(TRANSFER_SERVO_POWER);
+            leftTransferServo.setPower(transferServoPower);
+            rightTransferServo.setPower(transferServoPower);
         } else if (elementDetected) {
-            leftTransferServo.setPower(AUTO_NUDGE_POWER);
-            rightTransferServo.setPower(AUTO_NUDGE_POWER);
+            leftTransferServo.setPower(autoNudgePower);
+            rightTransferServo.setPower(autoNudgePower);
         } else {
             leftTransferServo.setPower(0);
             rightTransferServo.setPower(0);
