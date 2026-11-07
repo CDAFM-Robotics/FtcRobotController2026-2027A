@@ -9,6 +9,7 @@ import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
+import org.firstinspires.ftc.teamcode.util.LoopProfiler;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
@@ -152,6 +153,7 @@ public class TransferSubsystem extends Subsystem {
 
         leftTransferServo.update();
         rightTransferServo.update();
+        LoopProfiler.mark("transfer");
     }
 
     @Override

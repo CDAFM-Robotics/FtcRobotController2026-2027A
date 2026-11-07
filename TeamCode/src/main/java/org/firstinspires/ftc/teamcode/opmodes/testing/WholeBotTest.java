@@ -10,6 +10,7 @@ import org.firstinspires.ftc.teamcode.subsystems.LauncherSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.LocalizerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.MecanumDriveTrainSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.TransferSubsystem;
+import org.firstinspires.ftc.teamcode.util.LoopProfiler;
 
 @Configurable
 @TeleOp(name = "Whole Bot Test", group = "Testing")
@@ -102,6 +103,7 @@ public class WholeBotTest extends ModularOpMode {
 
     @Override
     public void loop() {
+        LoopProfiler.begin();
         // gp1 RB: toggle transfer nudge
         boolean rbNow = gamepad1.right_bumper;
         if (rbNow && !prevRB) transferNudgeToggle = !transferNudgeToggle;
@@ -179,6 +181,9 @@ public class WholeBotTest extends ModularOpMode {
         telemetry.addLine("gp2 RT: shoot | dpad up/down: pollen vel +/-20 | Y/A: nectar vel +/-20 | dpad left/right: transfer power -/+0.1");
         telemetry.addData("Transfer nudge", transferNudgeToggle ? "ON" : "off");
         telemetry.addLine("gp1 RT: intake fwd | gp1 LT: intake rev | gp1 RB: transfer nudge | gp1 LB: toggle extender | gp1 Y: intake macro");
+        LoopProfiler.mark("opmode");   // this OpMode's own controls and telemetry, above
         super.loop();
+        LoopProfiler.mark("modules");  // ModularOpMode modules + taskMaster
+        LoopProfiler.end();
     }
 }

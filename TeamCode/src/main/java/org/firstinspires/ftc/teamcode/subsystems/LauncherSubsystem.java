@@ -14,6 +14,7 @@ import com.bylazar.telemetry.TelemetryManager;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.devices.FlywheelMotorDevice;
+import org.firstinspires.ftc.teamcode.util.LoopProfiler;
 
 import java.util.function.BooleanSupplier;
 
@@ -188,6 +189,7 @@ public class LauncherSubsystem extends Subsystem {
               .append(" vbat=").append(Math.round(pollenLauncherMotor.getBatteryVoltage() * 100) / 100.0);
             Log.d("LauncherVelocity", sb.toString());
         }
+        LoopProfiler.mark("launcher");   // includes the bulk read when this is the first subsystem
     }
 
     @Override

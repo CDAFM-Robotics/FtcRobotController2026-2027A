@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
+import org.firstinspires.ftc.teamcode.util.LoopProfiler;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
@@ -144,6 +145,7 @@ public class IntakeSubsystem extends Subsystem {
         intakeMotor.update();
         leftExtenderServo.update();
         rightExtenderServo.update();
+        LoopProfiler.mark("intake");
     }
 
     @Override public void stop() {}

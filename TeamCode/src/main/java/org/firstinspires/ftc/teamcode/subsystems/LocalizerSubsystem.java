@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.cdarobotics.cdalib.bindings.BindingManager;
 import com.cdarobotics.cdalib.subsystems.Subsystem;
+import org.firstinspires.ftc.teamcode.util.LoopProfiler;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -55,6 +56,7 @@ public class LocalizerSubsystem extends Subsystem {
     @Override
     public void update() {
         pinpoint.update();
+        LoopProfiler.mark("localizer");
     }
 
     @Override

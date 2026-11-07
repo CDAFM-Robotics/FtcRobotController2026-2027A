@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.cdarobotics.cdalib.bindings.BindingManager;
 import com.cdarobotics.cdalib.devices.actuators.MotorDevice;
 import com.cdarobotics.cdalib.subsystems.Subsystem;
+import org.firstinspires.ftc.teamcode.util.LoopProfiler;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -92,6 +93,7 @@ public class MecanumDriveTrainSubsystem extends Subsystem {
         backLeftDriveMotor.update();
         frontRightDriveMotor.update();
         backRightDriveMotor.update();
+        LoopProfiler.mark("drive");
     }
 
     @Override
