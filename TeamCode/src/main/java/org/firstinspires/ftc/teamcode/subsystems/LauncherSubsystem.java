@@ -27,8 +27,10 @@ public class LauncherSubsystem extends Subsystem {
     public static double kP = 0.002;
     public static double kI = 0.0001;
     public static double kIMax = 0.1;          // cap on the integral's contribution, in power units
-    public static double kS = 0.0;             // static-friction power; measure on the robot (open-loop fit), 0 until then
-    public static double kV = 1.0 / 2700.0;    // power per tick/s at nominalVoltage (was kFF)
+    // Measured Nov 6 2026 with Launcher Open Loop Test (7 levels 0.2-0.8, both wheels, R^2 0.9994):
+    //   pollen kS 0.068 kV 3.72e-4   nectar kS 0.065 kV 3.74e-4   => 12 V free speed ~2500 ticks/s, 0.61 power at 1460
+    public static double kS = 0.067;           // static-friction power at nominalVoltage
+    public static double kV = 1.0 / 2680.0;    // power per tick/s at nominalVoltage (was kFF = 1/2700)
     public static double nominalVoltage = 12.0; // battery compensation reference; 0 disables it
     public static int voltageReadPeriodMs = 250;
     public static int logEveryNLoops = 1;      // LauncherVelocity Log.d cadence; 0 = off
@@ -180,9 +182,9 @@ public class LauncherSubsystem extends Subsystem {
             StringBuilder sb = logLine;
             sb.setLength(0);
             sb.append("t_ms=").append(System.nanoTime() / 1_000_000L)
-              .append(" pollen_target=").append((int) pollenLauncherVelocity)
+              .append(" pollen_target=").append((int) pollenLauncherMotor.getTargetVelocity())   // commanded: 0 when off
               .append(" pollen_actual=").append((int) pollenActual)
-              .append(" nectar_target=").append((int) nectarLauncherVelocity)
+              .append(" nectar_target=").append((int) nectarLauncherMotor.getTargetVelocity())
               .append(" nectar_actual=").append((int) nectarActual)
               .append(" pollen_power=").append(Math.round(pollenLauncherMotor.getLastOutput() * 1000) / 1000.0)
               .append(" nectar_power=").append(Math.round(nectarLauncherMotor.getLastOutput() * 1000) / 1000.0)
