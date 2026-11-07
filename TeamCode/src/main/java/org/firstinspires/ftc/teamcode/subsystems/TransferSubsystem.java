@@ -32,9 +32,12 @@ public class TransferSubsystem extends Subsystem {
     // diameter over the transfer's linear speed, so the transfer has to run several times slower, around 0.3 m/s,
     // for the gate to catch the second ball. Motor power is the dpad adjustment; the servos were fixed at full power,
     // which would have defeated slowing the motor alone. All three are Panels fields now.
-    public static double transferMotorPowerDefault = 1.0;   // starting value for the dpad-adjusted motor power
-    public static double transferServoPower = 1.0;          // the two CR feed servos
-    public static double autoNudgePower = 0.5;              // power when a ball is detected and nothing else is running
+    // Defaults lowered from 1.0 / 1.0 / 0.5 on Nov 6 so touching balls reach the wheel 100-175 ms apart instead of
+    // 40-70, which gives the per-shot gate time to stop the second ball. Raise with dpad right (motor) if the stack
+    // stalls; 0.25-0.3 is the next step down if strikes still come in pairs.
+    public static double transferMotorPowerDefault = 0.4;   // starting value for the dpad-adjusted motor power
+    public static double transferServoPower = 0.4;          // the two CR feed servos
+    public static double autoNudgePower = 0.3;              // power when a ball is detected and nothing else is running
 
     private double transferMotorPower = transferMotorPowerDefault;
 
