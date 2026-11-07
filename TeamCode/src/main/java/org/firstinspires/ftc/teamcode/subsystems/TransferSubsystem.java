@@ -5,7 +5,11 @@ import com.cdarobotics.cdalib.devices.actuators.CRServoDevice;
 import com.cdarobotics.cdalib.devices.actuators.MotorDevice;
 import com.cdarobotics.cdalib.devices.sensors.RevColorSensorV3Device;
 import com.cdarobotics.cdalib.subsystems.Subsystem;
+import com.qualcomm.hardware.lynx.LynxI2cDeviceSynch;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
+import com.qualcomm.robotcore.hardware.I2cDeviceSynchSimple;
+
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
@@ -14,7 +18,12 @@ import org.firstinspires.ftc.teamcode.util.LoopProfiler;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
+@Configurable
 public class TransferSubsystem extends Subsystem {
+
+    // The SDK leaves I2C devices at 100 kHz unless the driver asks for more; the Pinpoint driver asks for 400 kHz,
+    // the REV Color Sensor V3 driver does not, although the APDS-9151 supports it. Applied at construction.
+    public static boolean colorSensorFast400k = true;
 
     private static final double TRANSFER_POWER_STEP = 0.1;
     private static final double TRANSFER_SERVO_POWER = 1;
@@ -45,6 +54,19 @@ public class TransferSubsystem extends Subsystem {
 
         RevColorSensorV3 cs2 = hardwareMap.tryGet(RevColorSensorV3.class, "colorSensor2");
         colorSensor2 = (cs2 == null) ? null : new RevColorSensorV3Device(cs2);
+
+        if (colorSensorFast400k) {
+            setBusSpeed400k(cs1);
+            setBusSpeed400k(cs2);
+        }
+    }
+
+    private static void setBusSpeed400k(RevColorSensorV3 sensor) {
+        if (sensor == null) return;
+        I2cDeviceSynchSimple client = sensor.getDeviceClient();
+        if (client instanceof LynxI2cDeviceSynch) {
+            ((LynxI2cDeviceSynch) client).setBusSpeed(LynxI2cDeviceSynch.BusSpeed.FAST_400K);
+        }
     }
 
     /** Cached from this loop's update(); free to call as often as you like. */
