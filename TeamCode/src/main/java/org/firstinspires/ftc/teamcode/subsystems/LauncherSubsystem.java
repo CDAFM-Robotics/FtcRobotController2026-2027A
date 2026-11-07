@@ -1,13 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.cdarobotics.cdalib.bindings.BindingManager;
-import com.cdarobotics.cdalib.controllers.CompoundController;
-import com.cdarobotics.cdalib.controllers.FFController;
-import com.cdarobotics.cdalib.controllers.PIDController;
-import com.cdarobotics.cdalib.devices.actuators.CRServoDevice;
-import com.cdarobotics.cdalib.devices.actuators.MotorDevice;
-import com.cdarobotics.cdalib.devices.actuators.ServoDevice;
-import com.cdarobotics.cdalib.devices.actuators.VelocityMotorDevice;
 import com.cdarobotics.cdalib.subsystems.Subsystem;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -20,21 +13,27 @@ import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.devices.FlywheelMotorDevice;
 
-import java.util.List;
 import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
 
 @Configurable
 public class LauncherSubsystem extends Subsystem {
 
-    public static double kP  = 0.002;
-    public static double kI  = 0.0001;
-    public static double kD  = 0.0001;
-    public static double kFF = 1.0 / 2700.0;
+    // Flywheel loop gains. These are pushed into the motor devices every loop, so Panels edits are live.
+    // power = (kS + kV*target + kP*err + kI*integral) * (nominalVoltage / Vbat), clamped to [0, 1]. No kD on purpose:
+    // hub velocity comes in 20 ticks/s steps and a derivative term only amplifies that.
+    public static double kP = 0.002;
+    public static double kI = 0.0001;
+    public static double kIMax = 0.1;          // cap on the integral's contribution, in power units
+    public static double kS = 0.0;             // static-friction power; measure on the robot (open-loop fit), 0 until then
+    public static double kV = 1.0 / 2700.0;    // power per tick/s at nominalVoltage (was kFF)
+    public static double nominalVoltage = 12.0; // battery compensation reference; 0 disables it
+    public static int voltageReadPeriodMs = 250;
+    public static int logEveryNLoops = 1;      // LauncherVelocity Log.d cadence; 0 = off
 
-    private final VelocityMotorDevice pollenLauncherMotor;
-    private final VelocityMotorDevice nectarLauncherMotor;
+    private final FlywheelMotorDevice pollenLauncherMotor;
+    private final FlywheelMotorDevice nectarLauncherMotor;
 
     private BindingManager bindingManager;
 
@@ -42,8 +41,8 @@ public class LauncherSubsystem extends Subsystem {
     private final TelemetryManager panelsTelemetry;
 
     public LauncherSubsystem(HardwareMap hardwareMap, Telemetry telemetry, String pollenLauncherMotorName, String nectarLauncherMotorName) {
-        pollenLauncherMotor = new VelocityMotorDevice(hardwareMap, pollenLauncherMotorName, new CompoundController(0, new PIDController(0, kP, kI, kD), new FFController(0, 0, kFF, 0)));
-        nectarLauncherMotor = new VelocityMotorDevice(hardwareMap, nectarLauncherMotorName, new CompoundController(0, new PIDController(0, kP, kI, kD), new FFController(0, 0, kFF, 0)));
+        pollenLauncherMotor = new FlywheelMotorDevice(hardwareMap, pollenLauncherMotorName);
+        nectarLauncherMotor = new FlywheelMotorDevice(hardwareMap, nectarLauncherMotorName);
 
         this.telemetry = telemetry;
         this.panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
@@ -74,16 +73,17 @@ public class LauncherSubsystem extends Subsystem {
 
     @Override
     public void init() {
-        // pollenLauncherMotor
+        // Software loop drives raw power: make sure the hub's own velocity PID is not cascaded underneath it.
+        // FLOAT so a wheel at target 0 coasts instead of braking. Each is set once; nothing re-reads them later.
+        pollenLauncherMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         pollenLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         pollenLauncherMotor.setDirection(DcMotorSimple.Direction.FORWARD);
-        pollenLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-        // nectarLauncherMotor
+        nectarLauncherMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         nectarLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         nectarLauncherMotor.setDirection(DcMotorSimple.Direction.FORWARD);
-        nectarLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
+        applyGains();
     }
 
     @Override
@@ -103,7 +103,7 @@ public class LauncherSubsystem extends Subsystem {
     public double getPollenCurrentVelocity() { return pollenLauncherMotor.getCurrentVelocity(); }
     public double getNectarTargetVelocity() { return nectarLauncherVelocity; }
     public double getNectarCurrentVelocity() { return nectarLauncherMotor.getCurrentVelocity(); }
-    
+
     private final double LAUNCHER_MOTOR_VELOCITY_TUNING = 20;
 
     private boolean prevIncreasePollenVelocity = false;
@@ -111,8 +111,18 @@ public class LauncherSubsystem extends Subsystem {
     private boolean prevIncreaseNectarVelocity = false;
     private boolean prevDecreaseNectarVelocity = false;
 
+    private long loopCount = 0;
+    private final StringBuilder logLine = new StringBuilder(160);
+
+    private void applyGains() {
+        pollenLauncherMotor.setGains(kS, kV, kP, kI, kIMax).setNominalVoltage(nominalVoltage).setVoltageReadPeriodMs(voltageReadPeriodMs);
+        nectarLauncherMotor.setGains(kS, kV, kP, kI, kIMax).setNominalVoltage(nominalVoltage).setVoltageReadPeriodMs(voltageReadPeriodMs);
+    }
+
     @Override
     public void update() {
+        applyGains();   // cheap field copies; this is what makes the Panels sliders live
+
         if (bindingManager.checkBinding("pollenMotor")) {
             pollenLauncherMotor.setVelocity(pollenLauncherVelocity);
         } else {
@@ -140,24 +150,44 @@ public class LauncherSubsystem extends Subsystem {
         prevIncreaseNectarVelocity = increaseNectarNow;
         prevDecreaseNectarVelocity = decreaseNectarNow;
 
+        // Run the loops first so telemetry and the log describe this loop's command.
+        nectarLauncherMotor.update();
+        pollenLauncherMotor.update();
+
+        double pollenActual = pollenLauncherMotor.getCurrentVelocity();
+        double nectarActual = nectarLauncherMotor.getCurrentVelocity();
+
         telemetry.addData("Pollen Launcher Target Velocity", pollenLauncherVelocity);
         telemetry.addData("Nectar Launcher Target Velocity", nectarLauncherVelocity);
         telemetry.addLine();
-        telemetry.addData("Pollen Launcher Actual Velocity", pollenLauncherMotor.getCurrentVelocity());
-        telemetry.addData("Nectar Launcher Actual Velocity", nectarLauncherMotor.getCurrentVelocity());
+        telemetry.addData("Pollen Launcher Actual Velocity", pollenActual);
+        telemetry.addData("Nectar Launcher Actual Velocity", nectarActual);
 
         panelsTelemetry.addData("Pollen Target Velocity", pollenLauncherVelocity);
-        panelsTelemetry.addData("Pollen Actual Velocity", pollenLauncherMotor.getCurrentVelocity());
+        panelsTelemetry.addData("Pollen Actual Velocity", pollenActual);
+        panelsTelemetry.addData("Pollen Power", pollenLauncherMotor.getLastOutput());
         panelsTelemetry.addData("Nectar Target Velocity", nectarLauncherVelocity);
-        panelsTelemetry.addData("Nectar Actual Velocity", nectarLauncherMotor.getCurrentVelocity());
+        panelsTelemetry.addData("Nectar Actual Velocity", nectarActual);
+        panelsTelemetry.addData("Nectar Power", nectarLauncherMotor.getLastOutput());
+        panelsTelemetry.addData("Battery V", pollenLauncherMotor.getBatteryVoltage());
         if (panelsTelemetry.getShouldUpdateLines()) panelsTelemetry.update(telemetry);
 
-        Log.d("LauncherVelocity", String.format("pollen_target=%.1f pollen_actual=%.1f nectar_target=%.1f nectar_actual=%.1f",
-                pollenLauncherVelocity, pollenLauncherMotor.getCurrentVelocity(),
-                nectarLauncherVelocity, nectarLauncherMotor.getCurrentVelocity()));
-
-        nectarLauncherMotor.update();
-        pollenLauncherMotor.update();
+        // Per-loop record for offline analysis. Same keys as before (the log parsers rely on them) plus power and
+        // battery voltage, which the Nov 5 analysis lacked. Built without String.format; cadence from Panels.
+        loopCount++;
+        if (logEveryNLoops > 0 && loopCount % logEveryNLoops == 0) {
+            StringBuilder sb = logLine;
+            sb.setLength(0);
+            sb.append("t_ms=").append(System.nanoTime() / 1_000_000L)
+              .append(" pollen_target=").append((int) pollenLauncherVelocity)
+              .append(" pollen_actual=").append((int) pollenActual)
+              .append(" nectar_target=").append((int) nectarLauncherVelocity)
+              .append(" nectar_actual=").append((int) nectarActual)
+              .append(" pollen_power=").append(Math.round(pollenLauncherMotor.getLastOutput() * 1000) / 1000.0)
+              .append(" nectar_power=").append(Math.round(nectarLauncherMotor.getLastOutput() * 1000) / 1000.0)
+              .append(" vbat=").append(Math.round(pollenLauncherMotor.getBatteryVoltage() * 100) / 100.0);
+            Log.d("LauncherVelocity", sb.toString());
+        }
     }
 
     @Override
