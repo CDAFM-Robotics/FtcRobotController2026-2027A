@@ -22,7 +22,11 @@ public class WholeBotTest extends ModularOpMode {
     private LocalizerSubsystem localizerSubsystem;
     private MecanumDriveTrainSubsystem mecanumDriveTrainSubsystem;
 
-    private static final double RPM_READY_THRESHOLD = 0.99;
+    // Per-shot feed gate: while gamepad2 RT is held, the transfer runs only when the Pollen wheel is within
+    // readyBandTicks below target (overshoot counts as ready). After each ball the wheel dips 10-20 % and the
+    // transfer pauses for the ~0.3 s it takes to recover, instead of pushing the next ball into a slow wheel.
+    // Hub velocity comes in 20 ticks/s steps and the hold scatter is one step, so 40 = two steps.
+    public static double readyBandTicks = 40;
     // Intake motor speed magnitude, live-tunable from Panels (from andre's 2c05819)
     public static double intakeMotorSpeed = 0.75;
 
@@ -31,7 +35,7 @@ public class WholeBotTest extends ModularOpMode {
     private final ElapsedTime macroTimer = new ElapsedTime();
     private static final double GRAB_TIMEOUT_SEC = 2.0;
 
-    private boolean transferLatched     = false;
+    private boolean lastGateOpen        = false;
     private boolean transferNudgeToggle = false;
     private boolean extenderToggle      = false;
     private boolean prevRB = false;
@@ -54,10 +58,13 @@ public class WholeBotTest extends ModularOpMode {
         transferSubsystem = new TransferSubsystem(
                 hardwareMap, "transferMotor", "leftTransferServo", "rightTransferServo");
         transferSubsystem.setBindings(bindingManager,
-                () -> (transferShouldRun() || transferNudgeToggle || gamepad1.right_trigger > 0.1 || transferSubsystem.hasGameElement()) && !isIntakeRunning(),
-                () -> (transferShouldRun() || transferNudgeToggle || gamepad1.right_trigger > 0.1 || transferSubsystem.hasGameElement()) && !isIntakeRunning(),
+                () -> (transferShouldRun() || transferNudgeToggle || gamepad1.right_trigger > 0.1 || (!launcherEnabled() && transferSubsystem.hasGameElement())) && !isIntakeRunning(),
+                () -> (transferShouldRun() || transferNudgeToggle || gamepad1.right_trigger > 0.1 || (!launcherEnabled() && transferSubsystem.hasGameElement())) && !isIntakeRunning(),
                 () -> gamepad2.dpad_right,
                 () -> gamepad2.dpad_left);
+        // While shooting and the wheel is not back at speed, the ball-detect auto-nudge inside TransferSubsystem is
+        // held too; otherwise it would feed at 0.5 power around the gate.
+        transferSubsystem.setFeedHold(() -> launcherEnabled() && !wheelReady());
         registerSubsystem(transferSubsystem);
 
         intakeSubsystem = new IntakeSubsystem(
@@ -88,17 +95,20 @@ public class WholeBotTest extends ModularOpMode {
         return gamepad1.right_trigger > 0.1 || gamepad1.left_trigger > 0.1 || macroState != MacroState.IDLE;
     }
 
+    private boolean launcherEnabled() {
+        return gamepad2.right_trigger > 0.1;
+    }
+
+    /** Pollen wheel at target, within readyBandTicks below it; above target counts as ready. */
+    private boolean wheelReady() {
+        double actual = Math.abs(launcherSubsystem.getPollenCurrentVelocity());
+        double target = launcherSubsystem.getPollenTargetVelocity();
+        return actual >= target - readyBandTicks;
+    }
+
+    /** Per-shot gate: feed only while the launcher is enabled and the wheel is ready. No latch. */
     private boolean transferShouldRun() {
-        if (gamepad2.right_trigger <= 0.1) {
-            transferLatched = false;
-            return false;
-        }
-        if (!transferLatched) {
-            double actual = Math.abs(launcherSubsystem.getPollenCurrentVelocity());
-            double target = launcherSubsystem.getPollenTargetVelocity();
-            if (actual >= target * RPM_READY_THRESHOLD) transferLatched = true;
-        }
-        return transferLatched;
+        return launcherEnabled() && wheelReady();
     }
 
     @Override
@@ -164,14 +174,14 @@ public class WholeBotTest extends ModularOpMode {
         telemetry.addData("Trigger (gp2 RT)", "%.2f", gamepad2.right_trigger);
         telemetry.addData("Pollen flywheel", "%s  %.0f / %.0f",
                 gamepad2.right_trigger > 0.1 ? "ON" : "OFF", actualVelocity, targetVelocity);
-        telemetry.addData("Transfer", transferLatched ? "FEEDING" : "waiting for flywheel");
+        telemetry.addData("Transfer", transferShouldRun() ? "FEEDING" : (launcherEnabled() ? "waiting for wheel" : "idle"));
         telemetry.addData("Transfer power", "%.1f", transferSubsystem.getTransferMotorPower());
         double distance = transferSubsystem.getDistance();
         if (!Double.isNaN(distance)) {
             telemetry.addData("Distance (cm)", "%.1f", distance);
             boolean elementDetected = transferSubsystem.hasGameElement();
             telemetry.addData("Game element", elementDetected ? "DETECTED" : "none");
-            boolean autoNudgeActive = elementDetected && !transferNudgeToggle && !transferLatched;
+            boolean autoNudgeActive = elementDetected && !transferNudgeToggle && !transferSubsystem.isFeedHeld();
             telemetry.addData("Auto nudge", autoNudgeActive ? "ACTIVE" : "off");
         } else {
             telemetry.addData("Distance sensor", "not found");
@@ -181,6 +191,15 @@ public class WholeBotTest extends ModularOpMode {
         telemetry.addLine("gp2 RT: shoot | dpad up/down: pollen vel +/-20 | Y/A: nectar vel +/-20 | dpad left/right: transfer power -/+0.1");
         telemetry.addData("Transfer nudge", transferNudgeToggle ? "ON" : "off");
         telemetry.addLine("gp1 RT: intake fwd | gp1 LT: intake rev | gp1 RB: transfer nudge | gp1 LB: toggle extender | gp1 Y: intake macro");
+        // One log line per gate transition, so shots can be lined up with the LauncherVelocity trace.
+        boolean gateOpen = transferShouldRun();
+        if (gateOpen != lastGateOpen) {
+            android.util.Log.d("TransferGate", "t_ms=" + (System.nanoTime() / 1_000_000L) + " open=" + (gateOpen ? 1 : 0)
+                    + " pollen_actual=" + (int) launcherSubsystem.getPollenCurrentVelocity()
+                    + " pollen_target=" + (int) launcherSubsystem.getPollenTargetVelocity());
+            lastGateOpen = gateOpen;
+        }
+        telemetry.addData("Feed gate", launcherEnabled() ? (gateOpen ? "OPEN" : "waiting for wheel") : "launcher off");
         LoopProfiler.mark("opmode");   // this OpMode's own controls and telemetry, above
         super.loop();
         LoopProfiler.mark("modules");  // ModularOpMode modules + taskMaster

@@ -44,6 +44,18 @@ public class TransferSubsystem extends Subsystem {
     private static final double GAME_ELEMENT_DISTANCE2_CM = 6.0;
 
     private BindingManager bindingManager;
+    // When true, the ball-detect auto-nudge is suppressed (the explicit transferMotor/transferServo bindings still
+    // run). The shooting OpMode sets this to "launcher enabled and wheel not yet back at speed" so stacked balls wait
+    // for the flywheel instead of being nudged into it at 0.5 power.
+    private BooleanSupplier feedHold = () -> false;
+    private boolean lastHold = false;
+
+    public void setFeedHold(BooleanSupplier feedHold) {
+        this.feedHold = feedHold;
+    }
+
+    /** @return true if the auto-nudge was being held back on the last update(). */
+    public boolean isFeedHeld() { return lastHold; }
 
     public TransferSubsystem(HardwareMap hardwareMap, String transferMotorName, String leftTransferServoName, String rightTransferServoName){
         transferMotor = new MotorDevice(hardwareMap, transferMotorName);
@@ -150,7 +162,9 @@ public class TransferSubsystem extends Subsystem {
         prevDecreaseTransferPower = decreaseNow;
 
         boolean manualRun = bindingManager.checkBinding("transferMotor");
-        boolean elementDetected = hasGameElement();
+        boolean hold = feedHold.getAsBoolean();
+        lastHold = hold;
+        boolean elementDetected = hasGameElement() && !hold;   // auto-nudge only when not held
 
         if (manualRun) {
             transferMotor.setPower(transferMotorPower);
