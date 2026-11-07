@@ -30,9 +30,10 @@ public class TransferSubsystem extends Subsystem {
     // Feed power. All three are Panels fields and are read every loop, so an edit in Panels takes effect at once;
     // gamepad dpad left/right also steps transferMotorPower by 0.1 (same field, so Panels and telemetry agree).
     // Nov 6-7 experiment: balls that touch in the transfer strike the flywheel 40-140 ms apart, faster than the wheel
-    // recovers, so the feed was slowed to space them out. Result: anything below 1.0 on the motor or the servos moves
-    // only one ball; the stack does not restart from rest under the hood at reduced power. Defaults restored to full
-    // power; ball spacing has to come from the per-shot gate or a mechanical indexer, not from feed speed.
+    // recovers, so the plan is to slow the feed to space them out. Tested so far (valid runs only): motor 0.4 with
+    // servos 0.4, and motor 0.4 with servos 1.0, both moved one ball per trigger. Motor powers above 0.4 were never
+    // actually applied (a Panels copy bug, fixed with this field), and the servos were never tested below 1.0 with
+    // the motor at 1.0. Defaults are full power until the sweep is done.
     public static double transferMotorPower = 1.0;   // transfer belt motor while the feed binding is held
     public static double transferServoPower = 1.0;   // the two CR feed servos
     public static double autoNudgePower = 0.5;       // power when a ball is detected and nothing else is running
