@@ -18,14 +18,14 @@ public class HiveStateBlueAudienceBasicTest extends LinearOpMode {
         telemetry.update();
         waitForStart();
 
-//        hive.initSample();
-//
-//        while (opModeIsActive()) {
-//            hive.update();
-//            hive.addTelemetry(telemetry);
-//            telemetry.update();
-//        }
-//
-//        hive.close();
+        hive.initSample();
+
+        while (opModeIsActive()) {
+            hive.update();
+            hive.addTelemetry(telemetry);
+            telemetry.update();
+        }
+
+        hive.close();
     }
 }
