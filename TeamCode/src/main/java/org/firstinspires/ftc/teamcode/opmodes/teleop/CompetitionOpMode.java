@@ -5,12 +5,14 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.LauncherSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.LocalizerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.MecanumDriveTrainSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.TransferSubsystem;
 
 @TeleOp(name = "Competition TeleOp", group = "0Competition")
 public class CompetitionOpMode extends ModularOpMode {
 
+    private LocalizerSubsystem localizerSubsystem;
     private MecanumDriveTrainSubsystem mecanumDriveTrainSubsystem;
     private IntakeSubsystem intakeSubsystem;
     private TransferSubsystem transferSubsystem;
@@ -18,6 +20,11 @@ public class CompetitionOpMode extends ModularOpMode {
 
     @Override
     protected void preload() {
+
+        localizerSubsystem = new LocalizerSubsystem(hardwareMap, "pinpoint");
+
+        localizerSubsystem.setBindings(bindingManager);
+
         mecanumDriveTrainSubsystem = new MecanumDriveTrainSubsystem(hardwareMap, "frontLeftDriveMotor", "backLeftDriveMotor", "frontRightDriveMotor", "backRightDriveMotor");
 
         mecanumDriveTrainSubsystem.setBindings(bindingManager, () -> -gamepad1.left_stick_y, () -> gamepad1.left_stick_x, () -> gamepad1.right_stick_x, () -> 1, () -> 0);
@@ -34,6 +41,7 @@ public class CompetitionOpMode extends ModularOpMode {
 
         launcherSubsystem.setBindings(bindingManager, () -> gamepad2.right_bumper, () -> gamepad2.left_bumper);
 
+        registerSubsystem(localizerSubsystem);
         registerSubsystem(mecanumDriveTrainSubsystem);
         registerSubsystem(intakeSubsystem);
         registerSubsystem(transferSubsystem);

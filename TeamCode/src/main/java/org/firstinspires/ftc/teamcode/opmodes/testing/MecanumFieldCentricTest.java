@@ -15,7 +15,7 @@ public class MecanumFieldCentricTest extends ModularOpMode {
 
     @Override
     protected void preload() {
-        localizerSubsystem = new LocalizerSubsystem(hardwareMap, "pinpoint", 13.25, -9.75f, DistanceUnit.CM);
+        localizerSubsystem = new LocalizerSubsystem(hardwareMap, "pinpoint", 13.25, -9.75, DistanceUnit.CM);
         localizerSubsystem.setBindings(bindingManager);
 
         mecanumDriveTrainSubsystem = new MecanumDriveTrainSubsystem(hardwareMap, "frontLeftDriveMotor", "backLeftDriveMotor", "frontRightDriveMotor", "backRightDriveMotor");

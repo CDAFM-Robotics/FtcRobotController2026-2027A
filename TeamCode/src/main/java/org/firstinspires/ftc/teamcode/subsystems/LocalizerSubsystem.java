@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.cdarobotics.cdalib.bindings.BindingManager;
 import com.cdarobotics.cdalib.subsystems.Subsystem;
+import org.firstinspires.ftc.teamcode.util.LoopProfiler;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -20,9 +21,22 @@ public class LocalizerSubsystem extends Subsystem {
         pinpoint = new PinpointDevice(hardwareMap, pinpointName, pinpointOffsetX, pinpointOffsetY, distanceUnit);
     }
 
+    public LocalizerSubsystem(HardwareMap hardwareMap, String pinpointName) {
+        pinpoint = new PinpointDevice(hardwareMap, pinpointName, DEFAULT_PINPOINT_OFFSET_X_CM, DEFAULT_PINPOINT_OFFSET_Y_CM, DistanceUnit.CM);
+    }
+
     public void setBindings(BindingManager bindingManager) {
         bindingManager.addAnalog("heading", pinpoint::getHeading);
     }
+
+    /** X position in inches */
+    public double getX() { return pinpoint.getX(); }
+
+    /** Y position in inches */
+    public double getY() { return pinpoint.getY(); }
+
+    /** Heading in radians */
+    public double getHeading() { return pinpoint.getHeading(); }
 
     @Override
     public void init() {
@@ -42,6 +56,7 @@ public class LocalizerSubsystem extends Subsystem {
     @Override
     public void update() {
         pinpoint.update();
+        LoopProfiler.mark("localizer");
     }
 
     @Override

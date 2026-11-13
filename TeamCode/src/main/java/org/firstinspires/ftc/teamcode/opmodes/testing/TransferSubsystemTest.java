@@ -23,14 +23,14 @@ public class TransferSubsystemTest extends ModularOpMode {
 
     @Override
     public void loop() {
-        double distance = transferSubsystem.getDistance();
-        if (!Double.isNaN(distance)) {
-            telemetry.addData("Distance (cm)", "%.1f", distance);
-            telemetry.addData("Game element", transferSubsystem.hasGameElement() ? "DETECTED" : "none");
-        } else {
-            telemetry.addData("Distance sensor", "not found");
-        }
-        telemetry.addLine("RB: servos | LB: motor");
-        super.loop();
+//        //double distance = transferSubsystem.getDistance();
+//        if (!Double.isNaN(distance)) {
+//            telemetry.addData("Distance (cm)", "%.1f", distance);
+//            //telemetry.addData("Game element", transferSubsystem.hasGameElement() ? "DETECTED" : "none");
+//        } else {
+//            telemetry.addData("Distance sensor", "not found");
+//        }
+//        telemetry.addLine("RB: servos | LB: motor");
+//        super.loop();
     }
 }
