@@ -29,7 +29,7 @@ public class WholeBotTest extends ModularOpMode {
     // Hub velocity comes in 20 ticks/s steps and the hold scatter is one step, so 40 = two steps.
     public static double readyBandTicks = 40;
     // Intake motor speed magnitude, live-tunable from Panels (from andre's 2c05819)
-    public static double intakeMotorSpeed = 0.75;
+    public static double intakeMotorSpeed = 1.0;   // was 0.75; felt slow on Nov 14
 
     private enum MacroState { IDLE, EXTENDING, GRABBING, RETRACTING }
     private MacroState macroState = MacroState.IDLE;
@@ -42,6 +42,18 @@ public class WholeBotTest extends ModularOpMode {
     private boolean prevRB = false;
     private boolean prevLB = false;
     private boolean prevY  = false;
+    private boolean prevA  = false;
+
+    // gp1 Y: Flower pickup toggle. On: extender retracts, Flower bar lowers, intake runs (all inside IntakeSubsystem).
+    // Off: bar raises, intake stops 0.5 s later. Turning it on cancels the intake macro; A and LB are ignored while on.
+    private boolean flowerMode = false;
+
+    // gp1 rumble once per ball at transfer colorSensor1: fires when the sensor first sees a ball, re-arms after the
+    // sensor has been clear for ballRumbleRearmSec (a passing ball can flicker the reading).
+    public static int    ballRumbleMs       = 200;
+    public static double ballRumbleRearmSec = 0.15;
+    private boolean ballRumbleArmed = true;
+    private final ElapsedTime sinceBallSeen = new ElapsedTime();
 
     // gp2 pre-spin: RB toggles Pollen only, LB toggles Pollen + Nectar. Spins the wheels without feeding, so the
     // first shot goes as soon as a fire trigger is pulled instead of waiting for spin-up from zero.
@@ -88,6 +100,7 @@ public class WholeBotTest extends ModularOpMode {
                     : (gamepad1.left_trigger > 0.1 ? -intakeMotorSpeed
                     : (macroState != MacroState.IDLE ? intakeMotorSpeed : 0.0)),
                 () -> extenderToggle || macroState == MacroState.EXTENDING || macroState == MacroState.GRABBING);
+        intakeSubsystem.setFlowerBinding(bindingManager, () -> flowerMode);
         registerSubsystem(intakeSubsystem);
 
         localizerSubsystem = new LocalizerSubsystem(hardwareMap, "pinpoint");
@@ -178,14 +191,25 @@ public class WholeBotTest extends ModularOpMode {
         if (rbNow && !prevRB) transferNudgeToggle = !transferNudgeToggle;
         prevRB = rbNow;
 
-        // gp1 LB: toggle extender
-        boolean lbNow = gamepad1.left_bumper;
-        if (lbNow && !prevLB) extenderToggle = !extenderToggle;
-        prevLB = lbNow;
-
-        // gp1 Y: start/cancel intake macro
+        // gp1 Y: toggle Flower pickup. Turning it on cancels the intake macro and the extender toggle.
         boolean yNow = gamepad1.y;
         if (yNow && !prevY) {
+            flowerMode = !flowerMode;
+            if (flowerMode) {
+                macroState = MacroState.IDLE;
+                extenderToggle = false;
+            }
+        }
+        prevY = yNow;
+
+        // gp1 LB: toggle extender (ignored during Flower pickup)
+        boolean lbNow = gamepad1.left_bumper;
+        if (lbNow && !prevLB && !flowerMode) extenderToggle = !extenderToggle;
+        prevLB = lbNow;
+
+        // gp1 A: start/cancel intake macro (ignored during Flower pickup)
+        boolean aNow = gamepad1.a;
+        if (aNow && !prevA && !flowerMode) {
             if (macroState == MacroState.IDLE) {
                 macroState = MacroState.EXTENDING;
                 macroTimer.reset();
@@ -193,7 +217,18 @@ public class WholeBotTest extends ModularOpMode {
                 macroState = MacroState.IDLE;
             }
         }
-        prevY = yNow;
+        prevA = aNow;
+
+        // gp1 rumble once per ball at transfer colorSensor1.
+        if (transferSubsystem.hasBallAtSensor1()) {
+            if (ballRumbleArmed) {
+                gamepad1.rumble(ballRumbleMs);
+                ballRumbleArmed = false;
+            }
+            sinceBallSeen.reset();
+        } else if (!ballRumbleArmed && sinceBallSeen.seconds() >= ballRumbleRearmSec) {
+            ballRumbleArmed = true;
+        }
 
         // gp2 rumble when the spinning wheels first reach speed.
         int spinSet = nectarEnabled() ? 2 : (pollenEnabled() ? 1 : 0);
@@ -235,6 +270,11 @@ public class WholeBotTest extends ModularOpMode {
 
         // Telemetry
 
+        telemetry.addData("Flower pickup (gp1 Y)", !flowerMode ? "off"
+                : (intakeSubsystem.isFlowerWaitingForRetract() ? "ON - retracting extender" : "ON - bar down, intaking"));
+        telemetry.addData("Flower bar", !intakeSubsystem.isFlowerBarConfigured() ? "NOT CONFIGURED (flowerBarServo)"
+                : (intakeSubsystem.isFlowerBarDown() ? "DOWN" : (intakeSubsystem.isFlowerBarUp() ? "UP" : "raising")));
+        telemetry.addData("Ball at sensor 1", transferSubsystem.hasBallAtSensor1() ? "YES" : "no");
         telemetry.addData("Macro state", macroState);
         telemetry.addData("Extender toggle", extenderToggle ? "EXTENDED" : "RETRACTED");
         telemetry.addData("Extender L feedback (V)", "%.3f", intakeSubsystem.getLeftFeedbackVoltage());
@@ -263,7 +303,7 @@ public class WholeBotTest extends ModularOpMode {
         telemetry.addData("Distance2 (cm)", Double.isNaN(distance2) ? "not found" : String.format("%.1f", distance2));
         telemetry.addLine("gp2 RB: pre-spin pollen | gp2 LB: pre-spin both | gp2 RT: shoot pollen | gp2 LT: shoot pollen + nectar | dpad up/down: pollen vel +/-20 | Y/A: nectar vel +/-20");
         telemetry.addData("Transfer nudge", transferNudgeToggle ? "ON" : "off");
-        telemetry.addLine("gp1 RT: intake fwd | gp1 LT: intake rev (stops transfer) | gp1 RB: transfer nudge (wheels off only) | gp1 LB: toggle extender | gp1 Y: intake macro");
+        telemetry.addLine("gp1 RT: intake fwd | gp1 LT: intake rev (stops transfer) | gp1 RB: transfer nudge (wheels off only) | gp1 LB: toggle extender | gp1 A: intake macro | gp1 Y: Flower pickup on/off");
         // One log line per gate transition, so shots can be lined up with the LauncherVelocity trace.
         boolean gateOpen = transferShouldRun();
         if (gateOpen != lastGateOpen) {

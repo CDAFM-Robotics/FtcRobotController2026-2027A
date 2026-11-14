@@ -105,6 +105,11 @@ public class TransferSubsystem extends Subsystem {
         return sensor1 || sensor2;
     }
 
+    /** Cached from this loop's update(): colorSensor1 alone sees a ball (closer than GAME_ELEMENT_DISTANCE_CM). */
+    public boolean hasBallAtSensor1() {
+        return sensorsRead && colorSensor1 != null && colorSensor1.getDistanceCm() < GAME_ELEMENT_DISTANCE_CM;
+    }
+
     /** Cached distance from colorSensor1 in cm, or NaN if absent or not yet read. */
     public double getDistance() {
         if (colorSensor1 == null || !sensorsRead) return Double.NaN;
