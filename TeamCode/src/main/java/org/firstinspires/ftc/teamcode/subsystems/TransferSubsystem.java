@@ -27,8 +27,9 @@ public class TransferSubsystem extends Subsystem {
     public static boolean colorSensorFast400k = true;
 
     private static final double TRANSFER_POWER_STEP = 0.1;
-    // Feed power. All three are Panels fields and are read every loop, so an edit in Panels takes effect at once;
-    // gamepad dpad left/right also steps transferMotorPower by 0.1 (same field, so Panels and telemetry agree).
+    // Feed power. All three are Panels fields and are read every loop, so an edit in Panels takes effect at once.
+    // The 5-argument setBindings can also step transferMotorPower by 0.1 from buttons; no OpMode uses it now
+    // (WholeBotTest dropped its gp2 dpad left/right stepping on Nov 13: the servos were seen running while the motor was not, and a lowered transferMotorPower is the suspected cause).
     // Nov 6-7 experiment: balls that touch in the transfer strike the flywheel 40-140 ms apart, faster than the wheel
     // recovers, so the plan is to slow the feed to space them out. Tested so far (valid runs only): motor 0.4 with
     // servos 0.4, and motor 0.4 with servos 1.0, both moved one ball per trigger. Motor powers above 0.4 were never
@@ -59,6 +60,14 @@ public class TransferSubsystem extends Subsystem {
 
     public void setFeedHold(BooleanSupplier feedHold) {
         this.feedHold = feedHold;
+    }
+
+    // Extra nudge request from the OpMode (e.g. a manual nudge toggle). Treated like a detected ball: runs the motor at
+    // autoNudgePower when the transferMotor binding is off, and is suppressed by feedHold like the auto-nudge.
+    private BooleanSupplier nudgeRequest = () -> false;
+
+    public void setNudgeRequest(BooleanSupplier nudgeRequest) {
+        this.nudgeRequest = nudgeRequest;
     }
 
     /** @return true if the auto-nudge was being held back on the last update(). */
@@ -173,7 +182,7 @@ public class TransferSubsystem extends Subsystem {
         boolean manualRun = bindingManager.checkBinding("transferMotor");
         boolean hold = feedHold.getAsBoolean();
         lastHold = hold;
-        boolean elementDetected = hasGameElement() && !hold;   // auto-nudge only when not held
+        boolean elementDetected = (hasGameElement() || nudgeRequest.getAsBoolean()) && !hold;   // nudge only when not held
 
         if (manualRun) {
             transferMotor.setPower(transferMotorPower);
