@@ -101,10 +101,11 @@ public class HiveVisionSubsystemBasic {
         List<AprilTagDetection> detections = aprilTag.getDetections();
         for (AprilTagDetection detection : detections) {
 
-            Pitch = detection.ftcPose.pitch;
-            AprilTagSingleDetection d = (AprilTagSingleDetection) detection;
+            double Pitch = detection.ftcPose != null ? detection.ftcPose.pitch : 0;
 
             if (detection instanceof AprilTagSingleDetection) {
+                AprilTagSingleDetection d = (AprilTagSingleDetection) detection;
+
                 if (contains(nonAudienceIds, d.id)) {
                     if (Pitch > 0) {
                         lastSample = Sample.NON_AUDIENCE_HIGHER;
@@ -127,10 +128,13 @@ public class HiveVisionSubsystemBasic {
             }
             else if (detection instanceof AprilTagClusterDetection) {
                 AprilTagClusterDetection cluster = (AprilTagClusterDetection) detection;
+
                 String name = (cluster.metadata != null) ? cluster.metadata.name : "unknown";
                 String nameLower = name.toLowerCase();
+
                 boolean isAudience    = nameLower.contains("audience");
                 boolean isNonAudience = !isAudience && nameLower.contains("scoring");
+
                 if (isAudience) {
                     if (Pitch > 0) {
                         lastSample = Sample.NON_AUDIENCE_HIGHER;
