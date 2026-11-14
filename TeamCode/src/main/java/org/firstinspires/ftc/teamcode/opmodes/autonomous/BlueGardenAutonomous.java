@@ -38,7 +38,7 @@ public class BlueGardenAutonomous extends ModularOpMode {
         taskMaster.addTask(
             new SequentialTask(
                 new FollowPathTask(follower, Paths.BlueGardenPaths.startToShoot()),
-                tasks.autoGetLaunchAllTask(),
+                tasks.autoGetLaunchAllTask(0),
                 new ParallelTask(
                     tasks.autoGetStartIntakeTask(),
                     tasks.autoGetExtendIntakeTask(),
@@ -48,7 +48,7 @@ public class BlueGardenAutonomous extends ModularOpMode {
                 tasks.autoGetRetractIntakeTask(),
                 tasks.autoGetStopIntakeTask(),
                 new FollowPathTask(follower, Paths.BlueGardenPaths.gardenToShoot()),
-                tasks.autoGetLaunchAllTask(),
+                tasks.autoGetLaunchAllTask(0),
                 new ParallelTask(
                     tasks.autoGetStartIntakeTask(),
                     tasks.autoGetExtendIntakeTask(),
@@ -58,7 +58,7 @@ public class BlueGardenAutonomous extends ModularOpMode {
                 tasks.autoGetRetractIntakeTask(),
                 tasks.autoGetStopIntakeTask(),
                 new FollowPathTask(follower, Paths.BlueGardenPaths.flowerGardenToShoot()),
-                tasks.autoGetLaunchAllTask(),
+                tasks.autoGetLaunchAllTask(0),
                 new FollowPathTask(follower, Paths.BlueGardenPaths.shootToPark())
             )
         );

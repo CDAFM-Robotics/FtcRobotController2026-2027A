@@ -3,7 +3,9 @@ package org.firstinspires.ftc.teamcode.tasks;
 import com.cdarobotics.cdalib.bindings.BindingManager;
 import com.cdarobotics.cdalib.tasks.InstantTask;
 import com.cdarobotics.cdalib.tasks.NullTask;
+import com.cdarobotics.cdalib.tasks.SequentialTask;
 import com.cdarobotics.cdalib.tasks.Task;
+import com.cdarobotics.cdalib.tasks.WaitUntilTask;
 import com.pedropathing.follower.Follower;
 
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
@@ -20,6 +22,7 @@ public class Tasks {
     private double intakeSpeed;
     private boolean intakeExtend;
 
+    private boolean transferServoActive;
     private boolean transferActive;
 
     private boolean launcherActive;
@@ -31,32 +34,56 @@ public class Tasks {
         this.launcher = launcher;
 
         intake.setBindings(bindingManager, () -> intakeSpeed, () -> intakeExtend);
-        transfer.setBindings(bindingManager, () -> transferActive, () -> transferActive);
+        transfer.setBindings(bindingManager, () -> transferServoActive, () -> transferActive);
         launcher.setBindings(bindingManager, () -> launcherActive, () -> launcherActive);
     }
 
 
 
 
-    public Task getLaunchPollenTask() {
-        return new NullTask();
-    }
-    public Task getLaunchNectarTask() {
-        return new NullTask();
-    }
-    public Task getLaunchAllTask() {
-        return new NullTask();
+    public Task autoStartTransferTask() {
+        return new InstantTask(
+            () -> transferActive = true
+        );
     }
 
-    public Task autoGetLaunchPollenTask() {
-        return new NullTask();
-    }
-    public Task autoGetLaunchNectarTask() {
-        return new NullTask();
+    public Task autoStopTransferTask() {
+        return new InstantTask(
+            () -> transferActive = false
+        );
     }
 
-    public Task autoGetLaunchAllTask() {
-        return new NullTask();
+    public Task autoStartTransferServoTask() {
+        return new InstantTask(
+            () -> transferServoActive = true
+        );
+    }
+
+    public Task autoStopTransferServoTask() {
+        return new InstantTask(
+            () -> transferServoActive = false
+        );
+    }
+
+    public Task autoSpinUpLauncherTask() {
+        return new InstantTask(
+            () -> launcherActive = true
+        );
+    }
+
+    public Task autoWaitForLauncherVelocityTask(double velocity) {
+        return new WaitUntilTask(
+            () -> launcher.getPollenCurrentVelocity() >= velocity && launcher.getNectarCurrentVelocity() >= velocity
+        );
+    }
+
+    public Task autoGetLaunchAllTask(double velocity) {
+        return new SequentialTask(
+            autoSpinUpLauncherTask(),
+            autoWaitForLauncherVelocityTask(velocity),
+            autoStartTransferTask(),
+            autoStartTransferServoTask()
+        );
     }
 
     public Task autoGetStartIntakeTask() {
