@@ -93,14 +93,17 @@ public class LauncherSubsystem extends Subsystem {
     public void init_loop() {
 
     }
-
+ // ~3900 RPM (ticks/sec = RPM / 60 * 28)
     @Override
     public void start() {
 
     }
 
-    private double pollenLauncherVelocity = 1460; // ~3321 RPM (ticks/sec = RPM / 60 * 28)
-    private double nectarLauncherVelocity = 1540; // ~3900 RPM (ticks/sec = RPM / 60 * 28)
+    private static final double POLLEN_LAUNCHER_DEFAULT_VELOCITY = 1460; // ~3321 RPM (ticks/sec = RPM / 60 * 28)
+    private static final double NECTAR_LAUNCHER_DEFAULT_VELOCITY = 1540; // ~3900 RPM (ticks/sec = RPM / 60 * 28)
+
+    private double pollenLauncherVelocity = POLLEN_LAUNCHER_DEFAULT_VELOCITY;
+    private double nectarLauncherVelocity = NECTAR_LAUNCHER_DEFAULT_VELOCITY;
 
     public double getPollenTargetVelocity() { return pollenLauncherVelocity; }
     public double getPollenCurrentVelocity() { return pollenLauncherMotor.getCurrentVelocity(); }
