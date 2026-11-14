@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.opmodes.testing;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.vision.HiveVisionSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.HiveVisionSubsystem;
 
 @TeleOp(name = "Hive State Test - Blue Audience", group = "Testing")
 public class HiveStateBlueAudienceTest extends LinearOpMode {
