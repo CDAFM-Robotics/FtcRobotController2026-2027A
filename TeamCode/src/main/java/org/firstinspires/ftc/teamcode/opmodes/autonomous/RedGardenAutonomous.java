@@ -39,7 +39,7 @@ public class RedGardenAutonomous extends ModularOpMode {
         taskMaster.addTask(
             new SequentialTask(
                 new FollowPathTask(follower, Paths.RedGardenPaths.startToShoot()),
-                tasks.autoGetLaunchAllTask(),
+                tasks.autoGetLaunchAllTask(0),
                 new ParallelTask(
                     tasks.autoGetStartIntakeTask(),
                     tasks.autoGetExtendIntakeTask(),
@@ -49,7 +49,7 @@ public class RedGardenAutonomous extends ModularOpMode {
                 tasks.autoGetRetractIntakeTask(),
                 tasks.autoGetStopIntakeTask(),
                 new FollowPathTask(follower, Paths.RedGardenPaths.gardenToShoot()),
-                tasks.autoGetLaunchAllTask(),
+                tasks.autoGetLaunchAllTask(0),
                 new ParallelTask(
                     tasks.autoGetStartIntakeTask(),
                     tasks.autoGetExtendIntakeTask(),
@@ -59,7 +59,7 @@ public class RedGardenAutonomous extends ModularOpMode {
                 tasks.autoGetRetractIntakeTask(),
                 tasks.autoGetStopIntakeTask(),
                 new FollowPathTask(follower, Paths.RedGardenPaths.flowerGardenToShoot()),
-                tasks.autoGetLaunchAllTask(),
+                tasks.autoGetLaunchAllTask(0),
                 new FollowPathTask(follower, Paths.RedGardenPaths.shootToPark())
             )
         );
