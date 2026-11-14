@@ -281,14 +281,21 @@ public class WholeBotTest extends ModularOpMode {
         telemetry.addData("Extender R feedback (V)", "%.3f", intakeSubsystem.getRightFeedbackVoltage());
         telemetry.addData("isExtended", intakeSubsystem.isExtended());
         telemetry.addData("isRetracted", intakeSubsystem.isRetracted());
+        telemetry.addData("Retract correction L / R", "%.3f / %.3f",
+                intakeSubsystem.getRetractCorrectionLeft(), intakeSubsystem.getRetractCorrectionRight());
+        if (intakeSubsystem.isRetractCorrectionAtLimit()) {
+            telemetry.addLine("Extender: can't reach retracted (at INIT limit)");
+        }
         telemetry.addData("Triggers (gp2 RT / LT)", "%.2f / %.2f", gamepad2.right_trigger, gamepad2.left_trigger);
         telemetry.addData("Pollen flywheel", "%s  %.0f / %.0f", pollenEnabled() ? "ON" : "OFF",
                 launcherSubsystem.getPollenCurrentVelocity(), launcherSubsystem.getPollenTargetVelocity());
         telemetry.addData("Nectar flywheel", "%s  %.0f / %.0f", nectarEnabled() ? "ON" : "OFF",
                 launcherSubsystem.getNectarCurrentVelocity(), launcherSubsystem.getNectarTargetVelocity());
         telemetry.addData("Pre-spin (gp2 RB / LB)", spinMode);
-        telemetry.addData("Transfer", transferShouldRun() ? "FEEDING" : (isFiring() ? "waiting for wheel" : "idle"));
-        telemetry.addData("Transfer power", "%.1f", transferSubsystem.getTransferMotorPower());
+        telemetry.addData("Transfer mode", transferSubsystem.getMode());   // FULL (launch) / NUDGE / HELD / OFF
+        telemetry.addData("Transfer motor / servos", "%.2f / %.2f",
+                transferSubsystem.getMotorCommand(), transferSubsystem.getServoCommand());
+        telemetry.addData("Launch gate", transferShouldRun() ? "FEEDING" : (isFiring() ? "waiting for wheel" : "idle"));
         double distance = transferSubsystem.getDistance();
         if (!Double.isNaN(distance)) {
             telemetry.addData("Distance (cm)", "%.1f", distance);

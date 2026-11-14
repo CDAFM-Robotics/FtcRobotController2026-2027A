@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import android.util.Log;
+
 import com.cdarobotics.cdalib.bindings.BindingManager;
 import com.cdarobotics.cdalib.devices.actuators.CRServoDevice;
 import com.cdarobotics.cdalib.devices.actuators.MotorDevice;
@@ -37,7 +39,8 @@ public class TransferSubsystem extends Subsystem {
     // the motor at 1.0. Defaults are full power until the sweep is done.
     public static double transferMotorPower = 1.0;   // transfer belt motor while the feed binding is held
     public static double transferServoPower = 1.0;   // the two CR feed servos
-    public static double autoNudgePower = 0.5;       // power when a ball is detected and nothing else is running
+    public static double autoNudgePower = 0.7;       // power when a ball is detected and nothing else is running
+                                                     // (0.5 stalled the belt motor against a ball, Nov 14)
 
     private final MotorDevice transferMotor;
     private final CRServoDevice leftTransferServo;
@@ -146,6 +149,19 @@ public class TransferSubsystem extends Subsystem {
 
     public double getTransferMotorPower() { return transferMotorPower; }
 
+    // What update() actually commanded this loop, for telemetry and the TransferState log.
+    public enum Mode { OFF, FULL, NUDGE, HELD }
+    private Mode lastMode = Mode.OFF;
+    private double lastMotorCmd = 0, lastServoCmd = 0;
+    private Mode loggedMode = null;
+    private double loggedMotor = Double.NaN, loggedServo = Double.NaN;
+
+    /** FULL: transferMotor binding on (full feed power). NUDGE: ball detected / nudge request. HELD: feedHold is
+     *  suppressing a nudge. OFF: nothing. */
+    public Mode getMode() { return lastMode; }
+    public double getMotorCommand() { return lastMotorCmd; }
+    public double getServoCommand() { return lastServoCmd; }
+
     @Override
     public void init() {
         transferMotor.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -189,23 +205,22 @@ public class TransferSubsystem extends Subsystem {
         lastHold = hold;
         boolean elementDetected = (hasGameElement() || nudgeRequest.getAsBoolean()) && !hold;   // nudge only when not held
 
-        if (manualRun) {
-            transferMotor.setPower(transferMotorPower);
-        } else if (elementDetected) {
-            transferMotor.setPower(autoNudgePower);
-        } else {
-            transferMotor.setPower(0);
-        }
+        double motorCmd = manualRun ? transferMotorPower : (elementDetected ? autoNudgePower : 0);
+        boolean servoRun = bindingManager.checkBinding("transferServo");
+        double servoCmd = servoRun ? transferServoPower : (elementDetected ? autoNudgePower : 0);
 
-        if (bindingManager.checkBinding("transferServo")) {
-            leftTransferServo.setPower(transferServoPower);
-            rightTransferServo.setPower(transferServoPower);
-        } else if (elementDetected) {
-            leftTransferServo.setPower(autoNudgePower);
-            rightTransferServo.setPower(autoNudgePower);
-        } else {
-            leftTransferServo.setPower(0);
-            rightTransferServo.setPower(0);
+        transferMotor.setPower(motorCmd);
+        leftTransferServo.setPower(servoCmd);
+        rightTransferServo.setPower(servoCmd);
+
+        boolean ballSeen = hasGameElement() || nudgeRequest.getAsBoolean();
+        lastMode = manualRun ? Mode.FULL : (elementDetected ? Mode.NUDGE : ((hold && ballSeen) ? Mode.HELD : Mode.OFF));
+        lastMotorCmd = motorCmd;
+        lastServoCmd = servoCmd;
+        if (lastMode != loggedMode || motorCmd != loggedMotor || servoCmd != loggedServo) {
+            Log.d("TransferState", String.format("t_ms=%d mode=%s motor=%.2f servo=%.2f ball=%d hold=%d",
+                    System.nanoTime() / 1_000_000L, lastMode, motorCmd, servoCmd, hasGameElement() ? 1 : 0, hold ? 1 : 0));
+            loggedMode = lastMode; loggedMotor = motorCmd; loggedServo = servoCmd;
         }
 
         transferMotor.update();

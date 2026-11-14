@@ -52,6 +52,11 @@ public class IntakeSubsystem extends Subsystem {
     public static double extFeedbackMarginV = 0.03;
     // A side's reading must satisfy the threshold continuously this long before it counts (filters motion spikes).
     public static int    extFeedbackHoldMs  = 100;
+    // Feedback-corrected retract: while the extender should be retracted and has finished its ramp, any side whose
+    // feedback is outside the retracted range has its servo command moved this much further in per loop, never past
+    // INIT. Balls pushing the extender out (e.g. during Flower pickup) are pulled back this way. Reset on extend.
+    public static boolean retractCorrectionEnabled = true;
+    public static double  retractCorrectionStep    = 0.002;
 
     private BindingManager bindingManager;
     private final Telemetry telemetry;
@@ -81,6 +86,12 @@ public class IntakeSubsystem extends Subsystem {
     private final ElapsedTime extendedRawSince  = new ElapsedTime();
     private boolean retractedRawPrev = false;
     private boolean extendedRawPrev  = false;
+    // Per-side "in retracted range" from this loop's raw reading (true when that side has no feedback).
+    private boolean leftInRetractedRange  = true;
+    private boolean rightInRetractedRange = true;
+    // Retract correction, as a distance further in than RETRACTED (0 .. |RETRACTED - INIT|), per side.
+    private double retractCorrL = 0;
+    private double retractCorrR = 0;
 
     private final Servo flowerBarServo;            // null if not configured
     private boolean flowerBound = false;           // setFlowerBinding() called
@@ -160,6 +171,18 @@ public class IntakeSubsystem extends Subsystem {
         return retractedStable;
     }
 
+    /** Current retract correction per side, in servo units further in than RETRACTED (0 = none). */
+    public double getRetractCorrectionLeft()  { return retractCorrL; }
+    public double getRetractCorrectionRight() { return retractCorrR; }
+
+    /** A side has been pulled in all the way to INIT and its feedback is still outside the retracted range. */
+    public boolean isRetractCorrectionAtLimit() {
+        double maxL = Math.abs(POSITION_EXTENSION_SERVO_RETRACTED_LEFT  - POSITION_EXTENSION_SERVO_INIT_LEFT);
+        double maxR = Math.abs(POSITION_EXTENSION_SERVO_RETRACTED_RIGHT - POSITION_EXTENSION_SERVO_INIT_RIGHT);
+        return (retractCorrL >= maxL - 1e-9 && !leftInRetractedRange)
+            || (retractCorrR >= maxR - 1e-9 && !rightInRetractedRange);
+    }
+
     /** True if voltage v is at 'end' or beyond it (away from 'other'), allowing margin. Works for rising or falling sides. */
     private static boolean atOrBeyond(double v, double end, double other, double margin) {
         double outward = Math.signum(end - other);   // direction from the other end toward this end
@@ -170,6 +193,9 @@ public class IntakeSubsystem extends Subsystem {
     private void updateExtenderFeedback() {
         double vL = leftFeedback  != null ? leftFeedback.getVoltage()  : Double.NaN;
         double vR = rightFeedback != null ? rightFeedback.getVoltage() : Double.NaN;
+
+        leftInRetractedRange  = leftFeedback  == null || atOrBeyond(vL, extLeftRetractedV,  extLeftExtendedV,  extFeedbackMarginV);
+        rightInRetractedRange = rightFeedback == null || atOrBeyond(vR, extRightRetractedV, extRightExtendedV, extFeedbackMarginV);
 
         boolean retractedRaw, extendedRaw;
         if (leftFeedback == null && rightFeedback == null) {
@@ -243,15 +269,35 @@ public class IntakeSubsystem extends Subsystem {
         // (this is what retracts it before the bar lowers), while the bar is down, and while the bar is still rising.
         boolean extend = bindingManager.checkBinding("extendIntake")
                 && !flowerWanted && isFlowerBarUp();
+        if (extend) {
+            retractCorrL = 0;
+            retractCorrR = 0;
+        }
+        // "Further in" direction per side is from RETRACTED toward INIT.
+        double inL = Math.signum(POSITION_EXTENSION_SERVO_INIT_LEFT  - POSITION_EXTENSION_SERVO_RETRACTED_LEFT);
+        double inR = Math.signum(POSITION_EXTENSION_SERVO_INIT_RIGHT - POSITION_EXTENSION_SERVO_RETRACTED_RIGHT);
         double leftGoal  = extend
                 ? POSITION_EXTENSION_SERVO_EXTENDED_LEFT
-                : POSITION_EXTENSION_SERVO_RETRACTED_LEFT;
+                : POSITION_EXTENSION_SERVO_RETRACTED_LEFT + inL * retractCorrL;
         double rightGoal = extend
                 ? POSITION_EXTENSION_SERVO_EXTENDED_RIGHT
-                : POSITION_EXTENSION_SERVO_RETRACTED_RIGHT;
+                : POSITION_EXTENSION_SERVO_RETRACTED_RIGHT + inR * retractCorrR;
 
         currentLeftPos  = stepToward(currentLeftPos,  leftGoal);
         currentRightPos = stepToward(currentRightPos, rightGoal);
+
+        // Feedback-corrected retract: once a side has finished ramping to its retract goal, pull it further in (for the
+        // next loop) while its feedback is outside the retracted range, up to INIT.
+        if (!extend && retractCorrectionEnabled) {
+            double maxL = Math.abs(POSITION_EXTENSION_SERVO_RETRACTED_LEFT  - POSITION_EXTENSION_SERVO_INIT_LEFT);
+            double maxR = Math.abs(POSITION_EXTENSION_SERVO_RETRACTED_RIGHT - POSITION_EXTENSION_SERVO_INIT_RIGHT);
+            if (leftFeedback != null && currentLeftPos == leftGoal && !leftInRetractedRange) {
+                retractCorrL = Math.min(maxL, retractCorrL + retractCorrectionStep);
+            }
+            if (rightFeedback != null && currentRightPos == rightGoal && !rightInRetractedRange) {
+                retractCorrR = Math.min(maxR, retractCorrR + retractCorrectionStep);
+            }
+        }
 
         leftExtenderServo.setPosition(currentLeftPos);
         rightExtenderServo.setPosition(currentRightPos);
