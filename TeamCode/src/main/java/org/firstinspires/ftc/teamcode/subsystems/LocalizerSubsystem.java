@@ -5,7 +5,7 @@ import com.cdarobotics.cdalib.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.util.LoopProfiler;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.pedropathing.Constants;
 import org.firstinspires.ftc.teamcode.devices.PinpointDevice;
 
 public class LocalizerSubsystem extends Subsystem {
@@ -14,15 +14,12 @@ public class LocalizerSubsystem extends Subsystem {
 
     private BindingManager bindingManager;
 
-    public static final double DEFAULT_PINPOINT_OFFSET_X_CM = 13.25;
-    public static final double DEFAULT_PINPOINT_OFFSET_Y_CM = -9.75;
-
-    public LocalizerSubsystem(HardwareMap hardwareMap, String pinpointName, double pinpointOffsetX, double pinpointOffsetY, DistanceUnit distanceUnit) {
-        pinpoint = new PinpointDevice(hardwareMap, pinpointName, pinpointOffsetX, pinpointOffsetY, distanceUnit);
-    }
-
+    // Pod offsets, pod type and encoder directions all come from Pedro's Constants.localizerConfig, so TeleOp and
+    // autonomous configure the Pinpoint identically. Re-run the Pinpoint Tuner and paste its block into Constants.java
+    // to change them. (Nov 16: this used its own 13.25 / -9.75 cm offsets and never set the directions, so TeleOp
+    // depended on whatever the previous OpMode had left on the chip.)
     public LocalizerSubsystem(HardwareMap hardwareMap, String pinpointName) {
-        pinpoint = new PinpointDevice(hardwareMap, pinpointName, DEFAULT_PINPOINT_OFFSET_X_CM, DEFAULT_PINPOINT_OFFSET_Y_CM, DistanceUnit.CM);
+        pinpoint = new PinpointDevice(hardwareMap, pinpointName, Constants.localizerConfig);
     }
 
     public void setBindings(BindingManager bindingManager) {

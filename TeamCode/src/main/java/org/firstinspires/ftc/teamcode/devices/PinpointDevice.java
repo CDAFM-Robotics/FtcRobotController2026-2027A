@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.devices;
 
 import com.cdarobotics.cdalib.devices.Device;
+import com.pedropathing.revhub.localizers.PinpointConfig;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -14,10 +15,21 @@ public class PinpointDevice extends Device {
 
     private final double pinpointYawScalar;
 
-    public PinpointDevice(HardwareMap hardwareMap, String pinpointName, double pinpointOffsetX, double pinpointOffsetY, DistanceUnit distanceUnit) {
+    /**
+     * Configures the Pinpoint exactly as Pedro's PinpointLocalizer does from the same config: offsets, encoder
+     * resolution (ticksPerUnit if set, otherwise the pod type) and both encoder directions. Every setting is written,
+     * so nothing depends on what an earlier OpMode left on the chip. Does not reset the position.
+     */
+    public PinpointDevice(HardwareMap hardwareMap, String pinpointName, PinpointConfig config) {
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, pinpointName);
 
-        pinpoint.setOffsets(pinpointOffsetX, pinpointOffsetY, distanceUnit);
+        pinpoint.setOffsets(config.xPodOffset.get(), config.yPodOffset.get(), config.offsetUnits.get());
+        if (config.ticksPerUnit.get().isPresent()) {
+            pinpoint.setEncoderResolution(config.ticksPerUnit.get().getAsDouble(), config.encoderResolutionUnit.get());
+        } else {
+            pinpoint.setEncoderResolution(config.podType.get());
+        }
+        pinpoint.setEncoderDirections(config.xPodDirection.get(), config.yPodDirection.get());
 
         pinpointYawScalar = pinpoint.getYawScalar();
     }

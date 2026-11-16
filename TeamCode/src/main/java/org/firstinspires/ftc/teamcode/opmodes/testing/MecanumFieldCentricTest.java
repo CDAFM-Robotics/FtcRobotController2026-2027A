@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.opmodes.testing;
 import com.cdarobotics.cdalib.opmodes.ModularOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.subsystems.LocalizerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.MecanumDriveTrainSubsystem;
 
@@ -15,7 +14,7 @@ public class MecanumFieldCentricTest extends ModularOpMode {
 
     @Override
     protected void preload() {
-        localizerSubsystem = new LocalizerSubsystem(hardwareMap, "pinpoint", 13.25, -9.75, DistanceUnit.CM);
+        localizerSubsystem = new LocalizerSubsystem(hardwareMap, "pinpoint");
         localizerSubsystem.setBindings(bindingManager);
 
         mecanumDriveTrainSubsystem = new MecanumDriveTrainSubsystem(hardwareMap, "frontLeftDriveMotor", "backLeftDriveMotor", "frontRightDriveMotor", "backRightDriveMotor");
@@ -23,5 +22,17 @@ public class MecanumFieldCentricTest extends ModularOpMode {
 
         registerSubsystem(localizerSubsystem);
         registerSubsystem(mecanumDriveTrainSubsystem);
+    }
+
+    @Override
+    public void loop() {
+        super.loop();
+
+        // Pose from the Pinpoint, set up from Pedro's Constants.localizerConfig. Push forward: x up. Push left: y up.
+        // Turn left: heading up. Spin in place a full turn: x and y return close to where they started.
+        telemetry.addData("x (in)", "%.2f", localizerSubsystem.getX());
+        telemetry.addData("y (in)", "%.2f", localizerSubsystem.getY());
+        telemetry.addData("heading (deg)", "%.1f", Math.toDegrees(localizerSubsystem.getHeading()));
+        telemetry.update();
     }
 }
