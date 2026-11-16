@@ -39,7 +39,7 @@ public class TransferSubsystem extends Subsystem {
     // the motor at 1.0. Defaults are full power until the sweep is done.
     public static double transferMotorPower = 1.0;   // transfer belt motor while the feed binding is held
     public static double transferServoPower = 1.0;   // the two CR feed servos
-    public static double autoNudgePower = 0.7;       // power when a ball is detected and nothing else is running
+    public static double autoNudgePower = 1.0;       // power when a ball is detected and nothing else is running
                                                      // (0.5 stalled the belt motor against a ball, Nov 14)
 
     private final MotorDevice transferMotor;
@@ -50,6 +50,11 @@ public class TransferSubsystem extends Subsystem {
     // transaction per getDistance()/getNormalizedColors() call, and this subsystem was issuing up to eleven per loop.
     private final RevColorSensorV3Device colorSensor1;
     private final RevColorSensorV3Device colorSensor2;
+    // topTransferSensor: REV Color Sensor V3 at the top of the motor zone (Expansion Hub 2 I2C bus 1). Optional.
+    private final RevColorSensorV3Device topSensor;
+    // Ball at the top when closer than this. Measured Nov 14 with TopTransferSensorTest: Pollen parked at the top
+    // 1.83-1.86 cm; empty and a ball in the second motor-zone slot 4.99-5.29 cm. Midpoint about 3.42 cm.
+    public static double topBallDistanceCm = 3.42;
     private boolean sensorsRead = false;   // cached values are meaningless before the first update()
     private static final double GAME_ELEMENT_DISTANCE_CM  = 5.0;
     private static final double GAME_ELEMENT_DISTANCE2_CM = 6.0;
@@ -86,9 +91,13 @@ public class TransferSubsystem extends Subsystem {
         RevColorSensorV3 cs2 = hardwareMap.tryGet(RevColorSensorV3.class, "colorSensor2");
         colorSensor2 = (cs2 == null) ? null : new RevColorSensorV3Device(cs2);
 
+        RevColorSensorV3 top = hardwareMap.tryGet(RevColorSensorV3.class, "topTransferSensor");
+        topSensor = (top == null) ? null : new RevColorSensorV3Device(top);
+
         if (colorSensorFast400k) {
             setBusSpeed400k(cs1);
             setBusSpeed400k(cs2);
+            setBusSpeed400k(top);
         }
     }
 
@@ -111,6 +120,16 @@ public class TransferSubsystem extends Subsystem {
     /** Cached from this loop's update(): colorSensor1 alone sees a ball (closer than GAME_ELEMENT_DISTANCE_CM). */
     public boolean hasBallAtSensor1() {
         return sensorsRead && colorSensor1 != null && colorSensor1.getDistanceCm() < GAME_ELEMENT_DISTANCE_CM;
+    }
+
+    /**
+     * Reads topTransferSensor now (one I2C read per call; it is not read in update()) and returns true if a ball is
+     * at the top of the transfer (closer than topBallDistanceCm). False if the sensor is not configured.
+     */
+    public boolean hasBallAtTop() {
+        if (topSensor == null) return false;
+        topSensor.update();
+        return topSensor.getDistanceCm() < topBallDistanceCm;
     }
 
     /** Cached distance from colorSensor1 in cm, or NaN if absent or not yet read. */
