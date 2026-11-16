@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.vision;
+package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -46,14 +46,14 @@ public class HiveVisionSubsystemBasic {
     private int historyCount = 0;
 
     public double SAMPLE_INTERVAL_SEC = 0.5;
-    private double Pitch = 0.0;
     private final Sample[] history = new Sample[HISTORY_SIZE];
     private HiveVisionSubsystemBasic.Sample lastSample = HiveVisionSubsystemBasic.Sample.NO_DETECTION;
     private HiveVisionSubsystemBasic.BasicHiveStability basicHiveStability = HiveVisionSubsystemBasic.BasicHiveStability.STABLE;
     private HiveVisionSubsystemBasic.AdvancedHiveStability advancedHiveStability = HiveVisionSubsystemBasic.AdvancedHiveStability.STABLE;
 
-    private double MinHivePitch = -45;
-    private double MaxHivePitch = 45;
+    private double CameraPitch = 45;
+    private double MinHivePitch = -30;
+    private double MaxHivePitch = 30;
     private double HivePitchErrorMargin = 5;
     private double TotalHivePitch = 0; // a positive number would mean that the audience side is down
     private double LastTotalHivePitch = 0;
@@ -101,54 +101,67 @@ public class HiveVisionSubsystemBasic {
         List<AprilTagDetection> detections = aprilTag.getDetections();
         for (AprilTagDetection detection : detections) {
 
-            Pitch = detection.ftcPose.pitch;
-            AprilTagSingleDetection d = (AprilTagSingleDetection) detection;
+            // + cameraPitch or - cameraPitch?
+            double pitch = detection.ftcPose != null ? detection.ftcPose.pitch + CameraPitch : 0;
+            double roll = detection.ftcPose != null ? detection.ftcPose.roll : 0;
+            double advancedPitch = pitch + roll;
+
+            // use these to account for camera sensitivity? -----------
+            boolean pitchApproxZero = (advancedPitch > -HivePitchErrorMargin| advancedPitch < HivePitchErrorMargin);
+            boolean pitchApproxGreater = advancedPitch > HivePitchErrorMargin;
+            boolean pitchApproxLess = advancedPitch < -HivePitchErrorMargin;
+            //------------------------------------------
 
             if (detection instanceof AprilTagSingleDetection) {
+                AprilTagSingleDetection d = (AprilTagSingleDetection) detection;
+
                 if (contains(nonAudienceIds, d.id)) {
-                    if (Pitch > 0) {
+                    if (advancedPitch > 0) {
                         lastSample = Sample.NON_AUDIENCE_HIGHER;
-                    }else if (Pitch == 0){
+                    }else if (advancedPitch == 0){
                         lastSample = Sample.NOT_READABLE;
-                    }else if (Pitch < 0){
+                    }else if (advancedPitch < 0){
                         lastSample = Sample.AUDIENCE_HIGHER;
                     }
-                    TotalHivePitch = -Pitch;
+                    TotalHivePitch = -advancedPitch;
                 } else if (contains(audienceIds, d.id)) {
-                    if (Pitch > 0) {
+                    if (advancedPitch > 0) {
                         lastSample = Sample.AUDIENCE_HIGHER;
-                    }else if (Pitch == 0){
+                    }else if (advancedPitch == 0){
                         lastSample = Sample.NOT_READABLE;
-                    }else if (Pitch < 0){
+                    }else if (advancedPitch < 0){
                         lastSample = Sample.NON_AUDIENCE_HIGHER;
                     }
-                    TotalHivePitch = Pitch;
+                    TotalHivePitch = advancedPitch;
                 }
             }
             else if (detection instanceof AprilTagClusterDetection) {
                 AprilTagClusterDetection cluster = (AprilTagClusterDetection) detection;
+
                 String name = (cluster.metadata != null) ? cluster.metadata.name : "unknown";
                 String nameLower = name.toLowerCase();
+
                 boolean isAudience    = nameLower.contains("audience");
                 boolean isNonAudience = !isAudience && nameLower.contains("scoring");
+
                 if (isAudience) {
-                    if (Pitch > 0) {
+                    if (advancedPitch > 0) {
                         lastSample = Sample.NON_AUDIENCE_HIGHER;
-                    }else if (Pitch == 0){
+                    }else if (advancedPitch == 0){
                         lastSample = Sample.NOT_READABLE;
-                    }else if (Pitch < 0){
+                    }else if (advancedPitch < 0){
                         lastSample = Sample.AUDIENCE_HIGHER;
                     }
-                    TotalHivePitch = Pitch;
+                    TotalHivePitch = advancedPitch;
                 } else if (isNonAudience) {
-                    if (Pitch > 0) {
+                    if (advancedPitch > 0) {
                         lastSample = Sample.AUDIENCE_HIGHER;
-                    }else if (Pitch == 0){
+                    }else if (advancedPitch == 0){
                         lastSample = Sample.NOT_READABLE;
-                    }else if (Pitch < 0){
+                    }else if (advancedPitch < 0){
                         lastSample = Sample.NON_AUDIENCE_HIGHER;
                     }
-                    TotalHivePitch = -Pitch;
+                    TotalHivePitch = -advancedPitch;
                 }
             }
 
@@ -157,9 +170,9 @@ public class HiveVisionSubsystemBasic {
             if (historyCount < HISTORY_SIZE) historyCount++;
 
             //Hive Stability - is the hive tipping?
-            if (Pitch > (MaxHivePitch - HivePitchErrorMargin)|Pitch < (MinHivePitch + HivePitchErrorMargin)) {
+            if (advancedPitch > (MaxHivePitch - HivePitchErrorMargin)| advancedPitch < (MinHivePitch + HivePitchErrorMargin)) {
                 basicHiveStability = BasicHiveStability.STABLE;
-            } else if (Pitch < (MaxHivePitch - HivePitchErrorMargin) & Pitch > (MinHivePitch + HivePitchErrorMargin)) {
+            } else if (advancedPitch < (MaxHivePitch - HivePitchErrorMargin) & advancedPitch > (MinHivePitch + HivePitchErrorMargin)) {
                 basicHiveStability = BasicHiveStability.TIPPING;
             }
         }
@@ -208,7 +221,7 @@ public class HiveVisionSubsystemBasic {
 //        }
 
         // Pitch
-        telemetry.addData("Hive Pitch", TotalHivePitch);
+        telemetry.addData("Hive Pitch (toward audience)", TotalHivePitch);
         // Hive State
         telemetry.addData("Basic Hive State", lastSample);
         telemetry.addData("Hive Motion", advancedHiveStability);

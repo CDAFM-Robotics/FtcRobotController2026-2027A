@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.vision;
+package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -35,6 +35,14 @@ import java.util.List;
  *   5. At end:     hive.close();
  */
 public class HiveVisionSubsystem {
+
+    public enum HiveState {
+        NON_AUDIENCE_UP,
+        TIPPING_TO_AUDIENCE,
+        AUDIENCE_UP,
+        TIPPING_TO_NON_AUDIENCE,
+        UNKNOWN
+    }
 
     /** Which alliance we're on — determines which AprilTag IDs to look for. */
     public enum Alliance { RED, BLUE }
