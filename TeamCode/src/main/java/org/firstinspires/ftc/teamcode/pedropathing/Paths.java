@@ -11,8 +11,9 @@ public class Paths {
 
     private static final PoseFactory redPoseFactory = PoseFactory.degrees();
 
-    public static final Pose POSE_START_RED_GARDEN = redPoseFactory.of(56, 8, 90);
-    public static final Pose POSE_SHOOT_RED_GARDEN = redPoseFactory.of(56, 12, 90);
+    // Nov 16: measured Red Garden start spot (was 56, 8, 90). Heading 150.98 = 180 - 29.02 from the start geometry.
+    public static final Pose POSE_START_RED_GARDEN = redPoseFactory.of(32.07, 12.37, 150.98);
+    public static final Pose POSE_SHOOT_RED_GARDEN = redPoseFactory.of(32.07, 12.37, 150.98);   // Nov 16: shoot from the start spot (was 56, 12, 90)
     public static final Pose POSE_PICKUP_RED_GARDEN = redPoseFactory.of(9, 9, -90);
     public static final Pose POSE_PICKUP_RED_GARDEN_FLOWER = redPoseFactory.of(9, 40, 90);
     public static final Pose POSE_PARK_RED_GARDEN = redPoseFactory.of(12, 88, 90);

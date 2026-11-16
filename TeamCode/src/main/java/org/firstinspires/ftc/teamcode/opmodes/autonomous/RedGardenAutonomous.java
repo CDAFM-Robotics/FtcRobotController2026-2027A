@@ -29,6 +29,8 @@ public class RedGardenAutonomous extends ModularOpMode {
     protected void preload() {
 
         follower = Constants.createFollower(hardwareMap);
+        // Without this Pedro starts at (0, 0, 0) and every path is offset by the real start position.
+        follower.setPose(Paths.POSE_START_RED_GARDEN);
 
         intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry, "intakeMotor", "leftExtenderServo", "rightExtenderServo");
         transferSubsystem = new TransferSubsystem(hardwareMap, "transferMotor", "leftTransferServo", "rightTransferServo");
