@@ -239,9 +239,15 @@ public class WholeBotTest extends ModularOpMode {
             readyRumbled = true;
         }
 
-        // gp2 RB / LB: toggle pre-spin (Pollen only / Pollen + Nectar). Pressing the other bumper switches modes.
-        if (gamepad2.rightBumperWasPressed()) spinMode = (spinMode == SpinMode.POLLEN) ? SpinMode.OFF : SpinMode.POLLEN;
-        if (gamepad2.leftBumperWasPressed())  spinMode = (spinMode == SpinMode.BOTH)   ? SpinMode.OFF : SpinMode.BOTH;
+        // gp2 RB / LB: pre-spin. With every wheel off, RB starts Pollen only and LB starts Pollen + Nectar. While any
+        // wheel spins, either bumper turns pre-spin off, so one press always stops. (Nov 15: the old per-bumper toggle
+        // let RB/LB alternate Pollen <-> Both without ever reaching off.) A held fire trigger still spins its wheels.
+        boolean rbPressed = gamepad2.rightBumperWasPressed();
+        boolean lbPressed = gamepad2.leftBumperWasPressed();
+        if (rbPressed || lbPressed) {
+            if (anyWheelSpinning()) spinMode = SpinMode.OFF;
+            else spinMode = rbPressed ? SpinMode.POLLEN : SpinMode.BOTH;
+        }
 
         // Macro state machine
         switch (macroState) {

@@ -77,13 +77,13 @@ public class LauncherSubsystem extends Subsystem {
     @Override
     public void init() {
         // Software loop drives raw power: make sure the hub's own velocity PID is not cascaded underneath it.
-        // FLOAT so a wheel at target 0 coasts instead of braking. Each is set once; nothing re-reads them later.
+        // BRAKE so a wheel at target 0 stops quickly (Nov 15: coasting looked like the stop had failed). Each is set once; nothing re-reads them later.
         pollenLauncherMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        pollenLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        pollenLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         pollenLauncherMotor.setDirection(DcMotorSimple.Direction.FORWARD);
 
         nectarLauncherMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        nectarLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        nectarLauncherMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         nectarLauncherMotor.setDirection(DcMotorSimple.Direction.FORWARD);
 
         applyGains();
