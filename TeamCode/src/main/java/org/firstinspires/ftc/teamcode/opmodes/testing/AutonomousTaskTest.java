@@ -6,7 +6,6 @@ import com.cdarobotics.cdalib.opmodes.ModularOpMode;
 import com.cdarobotics.cdalib.tasks.FollowPathTask;
 import com.cdarobotics.cdalib.tasks.SequentialTask;
 import com.cdarobotics.cdalib.tasks.TaskMaster;
-import com.outoftheboxrobotics.photoncore.Photon;
 import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
@@ -17,7 +16,8 @@ import org.firstinspires.ftc.teamcode.subsystems.LauncherSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.TransferSubsystem;
 import org.firstinspires.ftc.teamcode.tasks.Tasks;
 
-@Photon
+// No @Photon here: PhotonCore swaps in motors without their configured type, which reverses every
+// goBILDA 5202 (drive included) relative to the directions Pedro was tuned with.
 @Autonomous(name = "Autonomous Task Test", group = "Testing")
 public class AutonomousTaskTest extends ModularOpMode {
     private Follower follower;
