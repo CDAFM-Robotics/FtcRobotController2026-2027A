@@ -4,6 +4,7 @@ import com.cdarobotics.cdalib.bindings.BindingManager;
 import com.cdarobotics.cdalib.tasks.InstantTask;
 import com.cdarobotics.cdalib.tasks.NullTask;
 import com.cdarobotics.cdalib.tasks.SequentialTask;
+import com.cdarobotics.cdalib.tasks.SleepTask;
 import com.cdarobotics.cdalib.tasks.Task;
 import com.cdarobotics.cdalib.tasks.WaitUntilTask;
 import com.pedropathing.follower.Follower;
@@ -71,6 +72,12 @@ public class Tasks {
         );
     }
 
+    public Task autoStopLauncherTask() {
+        return new InstantTask(
+            () -> launcherActive = false
+        );
+    }
+
     public Task autoWaitForLauncherVelocityTask(double velocity) {
         return new WaitUntilTask(
             () -> launcher.getPollenCurrentVelocity() >= velocity && launcher.getNectarCurrentVelocity() >= velocity
@@ -82,7 +89,11 @@ public class Tasks {
             autoSpinUpLauncherTask(),
             autoWaitForLauncherVelocityTask(velocity),
             autoStartTransferTask(),
-            autoStartTransferServoTask()
+            autoStartTransferServoTask(),
+            new SleepTask(1000),
+            autoStopLauncherTask(),
+            autoStopTransferTask(),
+            autoStopTransferServoTask()
         );
     }
 

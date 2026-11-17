@@ -18,14 +18,14 @@ public class Paths {
     public static final Pose POSE_PICKUP_RED_GARDEN_FLOWER = redPoseFactory.of(9, 40, 90);
     public static final Pose POSE_PARK_RED_GARDEN = redPoseFactory.of(12, 88, 90);
 
-    public static final Pose POSE_START_RED_FLOWER = redPoseFactory.of(56, 132.5, -90);
-    public static final Pose POSE_SHOOT_RED_FLOWER = redPoseFactory.of(56, 129.5, -90);
+    public static final Pose POSE_START_RED_FLOWER = redPoseFactory.of(56, 132.5, -90); // TODO edit this
+    public static final Pose POSE_SHOOT_RED_FLOWER = redPoseFactory.of(56, 129.5, 0);
     public static final Pose POSE_PICKUP_RED_FLOWER = redPoseFactory.of(38, 132.5, 0);
     public static final Pose POSE_PARK_RED_FLOWER = redPoseFactory.of(10, 119.7512, 11.9656);
     
     private static final PoseFactory bluePoseFactory = PoseFactory.degrees().mirrorX(70.75);
 
-    public static final Pose POSE_START_BLUE_GARDEN = bluePoseFactory.of(56, 8, 90);
+    public static final Pose POSE_START_BLUE_GARDEN = bluePoseFactory.of(56, 8, 90); //TODO fix all blue
     public static final Pose POSE_SHOOT_BLUE_GARDEN = bluePoseFactory.of(56, 12, 90);
     public static final Pose POSE_PICKUP_BLUE_GARDEN = bluePoseFactory.of(9, 9, -90);
     public static final Pose POSE_PICKUP_BLUE_GARDEN_FLOWER_LEFT = bluePoseFactory.of(9, 40, 90);
@@ -42,16 +42,17 @@ public class Paths {
         private static final Pose pickupFlowerGardenControl1 = redPoseFactory.of(24, 18, 0);
         private static final Pose shootToParkControl1 = redPoseFactory.of(12, 24, 0);
 
-        public static Path startToShoot() {
-            return line(POSE_START_RED_GARDEN, POSE_SHOOT_RED_GARDEN).linear(POSE_START_RED_GARDEN, POSE_SHOOT_RED_GARDEN);
-        }
+//        public static Path startToShoot() {
+//            return line(POSE_START_RED_GARDEN, POSE_SHOOT_RED_GARDEN).linear(POSE_START_RED_GARDEN, POSE_SHOOT_RED_GARDEN);
+//        }
+//        No longer needed as POSE_START_RED_GARDEN and POSE_SHOOT_RED_GARDEN are equivalent
 
         public static Path pickupGardenRed() {
             return curve(POSE_SHOOT_RED_GARDEN, pickupGardenRedControl1, POSE_PICKUP_RED_GARDEN).linear(POSE_SHOOT_RED_GARDEN, POSE_PICKUP_RED_GARDEN);
         }
 
         public static Path gardenToShoot() {
-            return line(POSE_PICKUP_RED_GARDEN, POSE_SHOOT_RED_GARDEN).constant(POSE_SHOOT_RED_GARDEN);
+            return line(POSE_PICKUP_RED_GARDEN, POSE_SHOOT_RED_GARDEN).linear(POSE_PICKUP_RED_GARDEN, POSE_SHOOT_RED_GARDEN);
         }
 
         public static Path pickupFlowerGarden() {
@@ -59,11 +60,11 @@ public class Paths {
         }
 
         public static Path flowerGardenToShoot() {
-            return line(POSE_PICKUP_RED_GARDEN_FLOWER, POSE_SHOOT_RED_GARDEN).constant(POSE_SHOOT_RED_GARDEN);
+            return line(POSE_PICKUP_RED_GARDEN_FLOWER, POSE_SHOOT_RED_GARDEN).linear(POSE_PICKUP_RED_GARDEN_FLOWER, POSE_SHOOT_RED_GARDEN);
         }
 
         public static Path shootToPark() {
-            return curve(POSE_SHOOT_RED_GARDEN, shootToParkControl1, POSE_PARK_RED_GARDEN).constant(POSE_PARK_RED_GARDEN);
+            return curve(POSE_SHOOT_RED_GARDEN, shootToParkControl1, POSE_PARK_RED_GARDEN).constant(POSE_SHOOT_RED_GARDEN);
         }
     }
     public static class RedFlowerPaths {

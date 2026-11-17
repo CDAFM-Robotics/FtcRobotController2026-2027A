@@ -40,7 +40,6 @@ public class RedGardenAutonomous extends ModularOpMode {
 
         taskMaster.addTask(
             new SequentialTask(
-                new FollowPathTask(follower, Paths.RedGardenPaths.startToShoot()),
                 tasks.autoGetLaunchAllTask(0),
                 new ParallelTask(
                     tasks.autoGetStartIntakeTask(),
