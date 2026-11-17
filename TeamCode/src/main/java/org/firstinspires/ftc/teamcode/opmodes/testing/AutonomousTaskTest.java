@@ -55,7 +55,7 @@ public class AutonomousTaskTest extends ModularOpMode {
         taskMaster.addTask(
             new SequentialTask(
                 tasks.autoGetLaunchAllTask(1450),
-                new FollowPathTask(follower, Paths.RedGardenPaths.shootToPark())
+                new FollowPathTask(follower, Paths.RedGardenPaths.pickupGardenRed())
             )
         );
     }
