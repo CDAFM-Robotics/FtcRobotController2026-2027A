@@ -1,13 +1,11 @@
 package org.firstinspires.ftc.teamcode.opmodes.testing;
 
 import com.cdarobotics.cdalib.opmodes.ModularOpMode;
-import com.outoftheboxrobotics.photoncore.Photon;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.subsystems.LauncherSubsystem;
 
 @TeleOp (name = "Launcher Subsystem Test", group = "Testing")
-@Photon
 public class LauncherSubsystemTest extends ModularOpMode {
 
     private LauncherSubsystem launcherSubsystem;
