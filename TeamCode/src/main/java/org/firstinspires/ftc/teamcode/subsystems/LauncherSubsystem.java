@@ -17,6 +17,7 @@ import org.firstinspires.ftc.teamcode.devices.FlywheelMotorDevice;
 import org.firstinspires.ftc.teamcode.util.LoopProfiler;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
 
 @Configurable
 public class LauncherSubsystem extends Subsystem {
@@ -105,6 +106,31 @@ public class LauncherSubsystem extends Subsystem {
     private double pollenLauncherVelocity = POLLEN_LAUNCHER_DEFAULT_VELOCITY;
     private double nectarLauncherVelocity = NECTAR_LAUNCHER_DEFAULT_VELOCITY;
 
+    // Target = base + offset. The base is the default above, or a supplier (AutoAimSubsystem's distance table) when
+    // setVelocitySources was called and it returns a number (NaN = no value, use the default). The +/-20 buttons move
+    // the offset, so they keep working on top of auto velocity.
+    private DoubleSupplier pollenBaseSource = null;
+    private DoubleSupplier nectarBaseSource = null;
+    private double pollenOffset = 0;
+    private double nectarOffset = 0;
+
+    /** Use these as the base target velocities (ticks/s) instead of the fixed defaults. */
+    public void setVelocitySources(DoubleSupplier pollenBase, DoubleSupplier nectarBase) {
+        pollenBaseSource = pollenBase;
+        nectarBaseSource = nectarBase;
+    }
+
+    public double getPollenOffset() { return pollenOffset; }
+    public double getNectarOffset() { return nectarOffset; }
+    public void resetOffsets() { pollenOffset = 0; nectarOffset = 0; }
+
+    /** The source's value, or the default when there is no source or it returns NaN. */
+    private static double base(DoubleSupplier source, double defaultVelocity) {
+        if (source == null) return defaultVelocity;
+        double v = source.getAsDouble();
+        return Double.isNaN(v) ? defaultVelocity : v;
+    }
+
     public double getPollenTargetVelocity() { return pollenLauncherVelocity; }
     public double getPollenCurrentVelocity() { return pollenLauncherMotor.getCurrentVelocity(); }
     public double getNectarTargetVelocity() { return nectarLauncherVelocity; }
@@ -129,6 +155,24 @@ public class LauncherSubsystem extends Subsystem {
     public void update() {
         applyGains();   // cheap field copies; this is what makes the Panels sliders live
 
+        boolean increasePollenNow = bindingManager.checkBinding("increasePollenMotorVelocity");
+        boolean decreasePollenNow = bindingManager.checkBinding("decreasePollenMotorVelocity");
+        boolean increaseNectarNow = bindingManager.checkBinding("increaseNectarMotorVelocity");
+        boolean decreaseNectarNow = bindingManager.checkBinding("decreaseNectarMotorVelocity");
+
+        if (increasePollenNow && !prevIncreasePollenVelocity) pollenOffset += LAUNCHER_MOTOR_VELOCITY_TUNING;
+        if (decreasePollenNow && !prevDecreasePollenVelocity) pollenOffset -= LAUNCHER_MOTOR_VELOCITY_TUNING;
+        if (increaseNectarNow && !prevIncreaseNectarVelocity) nectarOffset += LAUNCHER_MOTOR_VELOCITY_TUNING;
+        if (decreaseNectarNow && !prevDecreaseNectarVelocity) nectarOffset -= LAUNCHER_MOTOR_VELOCITY_TUNING;
+
+        prevIncreasePollenVelocity = increasePollenNow;
+        prevDecreasePollenVelocity = decreasePollenNow;
+        prevIncreaseNectarVelocity = increaseNectarNow;
+        prevDecreaseNectarVelocity = decreaseNectarNow;
+
+        pollenLauncherVelocity = base(pollenBaseSource, POLLEN_LAUNCHER_DEFAULT_VELOCITY) + pollenOffset;
+        nectarLauncherVelocity = base(nectarBaseSource, NECTAR_LAUNCHER_DEFAULT_VELOCITY) + nectarOffset;
+
         if (bindingManager.checkBinding("pollenMotor")) {
             pollenLauncherMotor.setVelocity(pollenLauncherVelocity);
         } else {
@@ -140,21 +184,6 @@ public class LauncherSubsystem extends Subsystem {
         } else {
             nectarLauncherMotor.setVelocity(0);
         }
-
-        boolean increasePollenNow = bindingManager.checkBinding("increasePollenMotorVelocity");
-        boolean decreasePollenNow = bindingManager.checkBinding("decreasePollenMotorVelocity");
-        boolean increaseNectarNow = bindingManager.checkBinding("increaseNectarMotorVelocity");
-        boolean decreaseNectarNow = bindingManager.checkBinding("decreaseNectarMotorVelocity");
-
-        if (increasePollenNow && !prevIncreasePollenVelocity) pollenLauncherVelocity += LAUNCHER_MOTOR_VELOCITY_TUNING;
-        if (decreasePollenNow && !prevDecreasePollenVelocity) pollenLauncherVelocity -= LAUNCHER_MOTOR_VELOCITY_TUNING;
-        if (increaseNectarNow && !prevIncreaseNectarVelocity) nectarLauncherVelocity += LAUNCHER_MOTOR_VELOCITY_TUNING;
-        if (decreaseNectarNow && !prevDecreaseNectarVelocity) nectarLauncherVelocity -= LAUNCHER_MOTOR_VELOCITY_TUNING;
-
-        prevIncreasePollenVelocity = increasePollenNow;
-        prevDecreasePollenVelocity = decreasePollenNow;
-        prevIncreaseNectarVelocity = increaseNectarNow;
-        prevDecreaseNectarVelocity = decreaseNectarNow;
 
         // Run the loops first so telemetry and the log describe this loop's command.
         nectarLauncherMotor.update();

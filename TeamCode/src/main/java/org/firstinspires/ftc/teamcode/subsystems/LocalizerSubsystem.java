@@ -104,6 +104,9 @@ public class LocalizerSubsystem extends Subsystem {
 
     public boolean isFieldCentric() { return alliance != null && headingKnown; }
 
+    /** Position, heading and alliance all known: what auto-aim needs. */
+    public boolean isPoseKnown() { return alliance != null && positionKnown && headingKnown; }
+
     /** Heading for field-centric driving (radians); 0 = robot-centric until the alliance and heading are known. */
     public double getDriveHeading() {
         if (!isFieldCentric()) return 0;

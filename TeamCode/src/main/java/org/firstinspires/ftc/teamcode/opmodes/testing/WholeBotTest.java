@@ -5,6 +5,7 @@ import com.cdarobotics.cdalib.opmodes.ModularOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.subsystems.AutoAimSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.LauncherSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.LocalizerSubsystem;
@@ -20,6 +21,7 @@ public class WholeBotTest extends ModularOpMode {
     private TransferSubsystem transferSubsystem;
     private IntakeSubsystem intakeSubsystem;
     private LocalizerSubsystem localizerSubsystem;
+    private AutoAimSubsystem autoAimSubsystem;
     private MecanumDriveTrainSubsystem mecanumDriveTrainSubsystem;
 
     // Per-shot feed gate: gamepad2 RT fires with the Pollen wheel, gamepad2 LT with both Pollen and Nectar. While either is
@@ -64,6 +66,11 @@ public class WholeBotTest extends ModularOpMode {
     public static int readyRumbleMs = 250;
     private int lastSpinSet = 0;          // 0 = off, 1 = Pollen only, 2 = Pollen + Nectar
     private boolean readyRumbled = false;
+
+    // gp2 double rumble when aim (gp2 X held) reaches AIMED. Re-armed when X is released or the error grows past
+    // aimRumbleRearmFactor x the aimed tolerance, so it doesn't buzz repeatedly at the edge of the tolerance.
+    public static double aimRumbleRearmFactor = 2.0;
+    private boolean aimRumbled = false;
 
     @Override
     protected void preload() {
@@ -114,12 +121,24 @@ public class WholeBotTest extends ModularOpMode {
                 gamepad1);
         registerSubsystem(localizerSubsystem);
 
+        // Auto-aim at our up CELL + launcher speed from distance. gp2 X held: robot turns so the line between the
+        // launchers faces the CELL. gp2 dpad left / right: audience / far CELL.
+        // Registered before the drivetrain so the drive gets this loop's turn command.
+        autoAimSubsystem = new AutoAimSubsystem(localizerSubsystem);
+        autoAimSubsystem.setBindings(bindingManager,
+                () -> gamepad2.x,
+                () -> gamepad2.dpad_left,
+                () -> gamepad2.dpad_right,
+                () -> gamepad1.right_stick_x);
+        launcherSubsystem.setVelocitySources(autoAimSubsystem::getPollenBaseVelocity, autoAimSubsystem::getNectarBaseVelocity);
+        registerSubsystem(autoAimSubsystem);
+
         mecanumDriveTrainSubsystem = new MecanumDriveTrainSubsystem(
                 hardwareMap, "frontLeftDriveMotor", "backLeftDriveMotor", "frontRightDriveMotor", "backRightDriveMotor");
         mecanumDriveTrainSubsystem.setBindings(bindingManager,
                 () -> -gamepad1.left_stick_y,
                 () -> gamepad1.left_stick_x,
-                () -> gamepad1.right_stick_x,
+                autoAimSubsystem::getTurn,          // driver's right stick, or auto-turn while gp2 X is held
                 () -> 1,
                 localizerSubsystem::getDriveHeading);   // alliance-adjusted; 0 (robot-centric) until alliance + heading known
         registerSubsystem(mecanumDriveTrainSubsystem);
@@ -252,6 +271,17 @@ public class WholeBotTest extends ModularOpMode {
             readyRumbled = true;
         }
 
+        // gp2 double rumble when aim locks on.
+        if (autoAimSubsystem.isAiming() && autoAimSubsystem.isAimed()) {
+            if (!aimRumbled) {
+                gamepad2.rumbleBlips(2);
+                aimRumbled = true;
+            }
+        } else if (!autoAimSubsystem.isAiming()
+                || !(Math.abs(autoAimSubsystem.getHeadingErrorDeg()) <= AutoAimSubsystem.aimedToleranceDeg * aimRumbleRearmFactor)) {
+            aimRumbled = false;
+        }
+
         // gp2 RB / LB: pre-spin. With every wheel off, RB starts Pollen only and LB starts Pollen + Nectar. While any
         // wheel spins, either bumper turns pre-spin off, so one press always stops. (Nov 15: the old per-bumper toggle
         // let RB/LB alternate Pollen <-> Both without ever reaching off.) A held fire trigger still spins its wheels.
@@ -284,9 +314,15 @@ public class WholeBotTest extends ModularOpMode {
                 break;
         }
 
+        // gp2 B: clear the +/-20 speed offsets back to 0 (target = table speed)
+        if (gamepad2.bWasPressed()) launcherSubsystem.resetOffsets();
+
         // Telemetry
 
         localizerSubsystem.addTelemetry(telemetry);
+        autoAimSubsystem.addTelemetry(telemetry);
+        telemetry.addData("Speed offset Pollen / Nectar (gp2 B clears)", "%+.0f / %+.0f",
+                launcherSubsystem.getPollenOffset(), launcherSubsystem.getNectarOffset());
         telemetry.addData("Flower pickup (gp1 Y)", !flowerMode ? "off"
                 : (intakeSubsystem.isFlowerWaitingForRetract() ? "ON - retracting extender" : "ON - bar down, intaking"));
         telemetry.addData("Flower bar", !intakeSubsystem.isFlowerBarConfigured() ? "NOT CONFIGURED (flowerBarServo)"
