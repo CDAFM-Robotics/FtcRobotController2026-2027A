@@ -15,6 +15,7 @@ import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.LauncherSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.TransferSubsystem;
 import org.firstinspires.ftc.teamcode.tasks.Tasks;
+import org.firstinspires.ftc.teamcode.util.PoseStorage;
 
 // No @Photon here: PhotonCore swaps in motors without their configured type, which reverses every
 // goBILDA 5202 (drive included) relative to the directions Pedro was tuned with.
@@ -81,6 +82,7 @@ public class AutonomousTaskTest extends ModularOpMode {
     public void loop() {
         super.loop();
         follower.update();
+        PoseStorage.saveFromAutonomous(follower.pose(), PoseStorage.Alliance.RED);   // TeleOp picks this up at INIT
 
         double believed = Math.toDegrees(follower.pose().heading());
         panelsTelemetry.addData("x (in)", follower.pose().x());

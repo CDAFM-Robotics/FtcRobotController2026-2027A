@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
 
 public class PinpointDevice extends Device {
@@ -41,6 +42,11 @@ public class PinpointDevice extends Device {
         if (pinpoint.getYawScalar() != pinpointYawScalar) {
             pinpoint.setYawScalar(pinpointYawScalar);
         }
+    }
+
+    /** Overwrites the Pinpoint's position and heading (inches, radians). The robot should be still. */
+    public void setPose(double xInches, double yInches, double headingRadians) {
+        pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, xInches, yInches, AngleUnit.RADIANS, headingRadians));
     }
 
     public double getHeading() {

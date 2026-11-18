@@ -104,7 +104,14 @@ public class WholeBotTest extends ModularOpMode {
         registerSubsystem(intakeSubsystem);
 
         localizerSubsystem = new LocalizerSubsystem(hardwareMap, "pinpoint");
-        localizerSubsystem.setBindings(bindingManager);
+        // Autonomous handoff (PoseStorage at INIT), corner / heading resets and alliance choice. B and X are free on
+        // gp1 here; they only pick the alliance before Start.
+        localizerSubsystem.setBindings(bindingManager,
+                () -> gamepad1.back,         // hold 0.5 s: Garden corner reset (Back / Share)
+                () -> gamepad1.dpad_down,    // hold 0.5 s: heading reset, robot facing away from the drivers
+                () -> gamepad1.b,            // before Start: Red
+                () -> gamepad1.x,            // before Start: Blue
+                gamepad1);
         registerSubsystem(localizerSubsystem);
 
         mecanumDriveTrainSubsystem = new MecanumDriveTrainSubsystem(
@@ -114,7 +121,7 @@ public class WholeBotTest extends ModularOpMode {
                 () -> gamepad1.left_stick_x,
                 () -> gamepad1.right_stick_x,
                 () -> 1,
-                localizerSubsystem::getHeading);
+                localizerSubsystem::getDriveHeading);   // alliance-adjusted; 0 (robot-centric) until alliance + heading known
         registerSubsystem(mecanumDriveTrainSubsystem);
     }
 
@@ -181,6 +188,12 @@ public class WholeBotTest extends ModularOpMode {
     /** Per-shot gate: feed only while a fire trigger is held and its wheels are ready. Pre-spin alone never feeds. No latch. */
     private boolean transferShouldRun() {
         return isFiring() && wheelReady();
+    }
+
+    @Override
+    public void init_loop() {
+        super.init_loop();
+        localizerSubsystem.addTelemetry(telemetry);
     }
 
     @Override
@@ -271,11 +284,9 @@ public class WholeBotTest extends ModularOpMode {
                 break;
         }
 
-        double x = localizerSubsystem.getX();
-        double y = localizerSubsystem.getY();
-
         // Telemetry
 
+        localizerSubsystem.addTelemetry(telemetry);
         telemetry.addData("Flower pickup (gp1 Y)", !flowerMode ? "off"
                 : (intakeSubsystem.isFlowerWaitingForRetract() ? "ON - retracting extender" : "ON - bar down, intaking"));
         telemetry.addData("Flower bar", !intakeSubsystem.isFlowerBarConfigured() ? "NOT CONFIGURED (flowerBarServo)"

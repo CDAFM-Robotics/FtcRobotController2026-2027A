@@ -14,6 +14,7 @@ import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.LauncherSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.TransferSubsystem;
 import org.firstinspires.ftc.teamcode.tasks.Tasks;
+import org.firstinspires.ftc.teamcode.util.PoseStorage;
 
 public class RedGardenAutonomous extends ModularOpMode {
 
@@ -64,5 +65,11 @@ public class RedGardenAutonomous extends ModularOpMode {
                 new FollowPathTask(follower, Paths.RedGardenPaths.shootToPark())
             )
         );
+    }
+
+    @Override
+    public void loop() {
+        super.loop();
+        PoseStorage.saveFromAutonomous(follower.pose(), PoseStorage.Alliance.RED);   // TeleOp picks this up at INIT
     }
 }
