@@ -18,7 +18,7 @@ public class Paths {
     // wall y = 0), so y 15 leaves the intake tip ~1 in off that wall, and x 12 keeps the robot's left side off the red wall.
     public static final Pose POSE_PICKUP_RED_GARDEN = redPoseFactory.of(12, 15, -90);   // was 9, 9
     public static final Pose POSE_PICKUP_RED_GARDEN_FLOWER = redPoseFactory.of(9, 40, 90);
-    public static final Pose POSE_PARK_RED_GARDEN = redPoseFactory.of(12, 84, 90);   // finish moved 4 in -y (was 12, 88)
+    public static final Pose POSE_PARK_RED_GARDEN = redPoseFactory.of(12, 89, 90);   // finish moved 4 in -y (was 12, 88)
 
     // Red Flower start/shoot: front-left robot corner (18x18) on the midpoint of the 2nd-tile-from-red-wall's far-wall
     // edge (35.375, 141.5), rotated so the Pollen launcher (6.148 in behind center, fires right) points at the far CELL
@@ -46,9 +46,17 @@ public class Paths {
     private static final PoseFactory blue180 = PoseFactory.degrees().rotateAround(70.75, 70.75, 180);
 
     public static final Pose POSE_SHOOT_BLUE_NEAR = blue180.of(32.07, 12.37, 150.98);   // 180-rot of POSE_SHOOT_RED_GARDEN
-    public static final Pose POSE_PARK_BLUE_NEAR  = blue180.of(12, 84, 90);             // 180-rot of POSE_PARK_RED_GARDEN
+    public static final Pose POSE_PARK_BLUE_NEAR  = blue180.of(12, 89, 90);             // 180-rot of POSE_PARK_RED_GARDEN
     public static final Pose POSE_SHOOT_BLUE_FAR  = blue180.of(33.63, 128.89, 37.11);   // 180-rot of POSE_SHOOT_RED_FLOWER
     public static final Pose POSE_PARK_BLUE_FAR   = blue180.of(14, 117.7512, 11.9656);  // 180-rot of POSE_PARK_RED_FLOWER
+
+    // Garden-side loading-zone push: start beside the loading zone in the first column, 3rd tile row from the top
+    // (tiles ~23.58 in: col-1 center x 11.79, row-4 center y 82.54), facing the red wall (180 deg). Drive +y one tile
+    // (24 in) holding that heading, so the robot's flat right side shoves the adjacent robot into the loading zone.
+    public static final Pose POSE_PUSH_START_RED_GARDEN  = redPoseFactory.of(11.79, 82.54, 180);
+    public static final Pose POSE_PUSH_END_RED_GARDEN    = redPoseFactory.of(11.79, 106.54, 180);
+    public static final Pose POSE_PUSH_START_BLUE_GARDEN = blue180.of(11.79, 82.54, 180);    // 180-rot of the Red push start
+    public static final Pose POSE_PUSH_END_BLUE_GARDEN   = blue180.of(11.79, 106.54, 180);   // 180-rot of the Red push end
 
     public static class RedGardenPaths {
 
