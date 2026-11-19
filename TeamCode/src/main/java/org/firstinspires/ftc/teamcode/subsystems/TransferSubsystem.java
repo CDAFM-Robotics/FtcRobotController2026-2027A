@@ -41,6 +41,10 @@ public class TransferSubsystem extends Subsystem {
     public static double transferServoPower = 1.0;   // the two CR feed servos
     public static double autoNudgePower = 1.0;       // power when a ball is detected and nothing else is running
                                                      // (0.5 stalled the belt motor against a ball, Nov 14)
+    // Reverse step (one ball space): motor only, backwards, until the encoder has moved reverseStepTicks.
+    public static double reverseNudgePower = 1.0;    // motor power (run backwards) for the reverse step; servos stay off
+    public static int reverseStepTicks = 150;        // encoder ticks = one ball space (tune: see "last reverse step" telemetry)
+    public static double reverseStepTimeoutSec = 0.5; // safety stop if the encoder doesn't reach the count (jam, unplugged)
 
     private final MotorDevice transferMotor;
     private final CRServoDevice leftTransferServo;
@@ -77,6 +81,28 @@ public class TransferSubsystem extends Subsystem {
     public void setNudgeRequest(BooleanSupplier nudgeRequest) {
         this.nudgeRequest = nudgeRequest;
     }
+
+    // Reverse step: ONLY the motor runs backwards at reverseNudgePower, servos off, until the encoder has moved
+    // reverseStepTicks (or reverseStepTimeoutSec passes). Overrides the auto-nudge; a launch feed cancels it.
+    private boolean reversing = false;
+    private int reverseStartPos = 0;
+    private int lastReverseTicks = 0;
+    private boolean lastReverseTimedOut = false;
+    private final com.qualcomm.robotcore.util.ElapsedTime reverseTimer = new com.qualcomm.robotcore.util.ElapsedTime();
+
+    /** Start one reverse step (one ball space). Ignored if one is already running. */
+    public void startReverseStep() {
+        if (reversing) return;
+        reversing = true;
+        reverseStartPos = transferMotor.getCurrentPosition();
+        reverseTimer.reset();
+    }
+
+    public boolean isReversing() { return reversing; }
+    /** Ticks the last finished reverse step actually moved, and whether it stopped on the timeout. */
+    public int getLastReverseTicks() { return lastReverseTicks; }
+    public boolean didLastReverseTimeOut() { return lastReverseTimedOut; }
+    public int getMotorPosition() { return transferMotor.getCurrentPosition(); }
 
     /** @return true if the auto-nudge was being held back on the last update(). */
     public boolean isFeedHeld() { return lastHold; }
@@ -169,14 +195,14 @@ public class TransferSubsystem extends Subsystem {
     public double getTransferMotorPower() { return transferMotorPower; }
 
     // What update() actually commanded this loop, for telemetry and the TransferState log.
-    public enum Mode { OFF, FULL, NUDGE, HELD }
+    public enum Mode { OFF, FULL, NUDGE, HELD, REVERSE }
     private Mode lastMode = Mode.OFF;
     private double lastMotorCmd = 0, lastServoCmd = 0;
     private Mode loggedMode = null;
     private double loggedMotor = Double.NaN, loggedServo = Double.NaN;
 
     /** FULL: transferMotor binding on (full feed power). NUDGE: ball detected / nudge request. HELD: feedHold is
-     *  suppressing a nudge. OFF: nothing. */
+     *  suppressing a nudge. REVERSE: motor backwards for the reverse nudge. OFF: nothing. */
     public Mode getMode() { return lastMode; }
     public double getMotorCommand() { return lastMotorCmd; }
     public double getServoCommand() { return lastServoCmd; }
@@ -224,16 +250,28 @@ public class TransferSubsystem extends Subsystem {
         lastHold = hold;
         boolean elementDetected = (hasGameElement() || nudgeRequest.getAsBoolean()) && !hold;   // nudge only when not held
 
-        double motorCmd = manualRun ? transferMotorPower : (elementDetected ? autoNudgePower : 0);
+        if (reversing) {
+            int moved = Math.abs(transferMotor.getCurrentPosition() - reverseStartPos);
+            boolean timedOut = reverseTimer.seconds() >= reverseStepTimeoutSec;
+            if (moved >= reverseStepTicks || timedOut || manualRun) {
+                reversing = false;
+                lastReverseTicks = moved;
+                lastReverseTimedOut = timedOut && moved < reverseStepTicks;
+            }
+        }
+        boolean reverse = reversing;
+
+        double motorCmd = manualRun ? transferMotorPower : (reverse ? -reverseNudgePower : (elementDetected ? autoNudgePower : 0));
         boolean servoRun = bindingManager.checkBinding("transferServo");
-        double servoCmd = servoRun ? transferServoPower : (elementDetected ? autoNudgePower : 0);
+        double servoCmd = reverse ? 0 : (servoRun ? transferServoPower : (elementDetected ? autoNudgePower : 0));
 
         transferMotor.setPower(motorCmd);
         leftTransferServo.setPower(servoCmd);
         rightTransferServo.setPower(servoCmd);
 
         boolean ballSeen = hasGameElement() || nudgeRequest.getAsBoolean();
-        lastMode = manualRun ? Mode.FULL : (elementDetected ? Mode.NUDGE : ((hold && ballSeen) ? Mode.HELD : Mode.OFF));
+        lastMode = manualRun ? Mode.FULL : (reverse ? Mode.REVERSE
+                : (elementDetected ? Mode.NUDGE : ((hold && ballSeen) ? Mode.HELD : Mode.OFF)));
         lastMotorCmd = motorCmd;
         lastServoCmd = servoCmd;
         if (lastMode != loggedMode || motorCmd != loggedMotor || servoCmd != loggedServo) {

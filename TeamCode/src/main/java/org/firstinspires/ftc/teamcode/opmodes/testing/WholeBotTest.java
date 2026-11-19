@@ -39,7 +39,6 @@ public class WholeBotTest extends ModularOpMode {
     private static final double GRAB_TIMEOUT_SEC = 2.0;
 
     private boolean lastGateOpen        = false;
-    private boolean transferNudgeToggle = false;
     private boolean extenderToggle      = false;
     private boolean prevRB = false;
     private boolean prevLB = false;
@@ -91,8 +90,9 @@ public class WholeBotTest extends ModularOpMode {
                 this::transferCommanded,     // servos: full power for launching and for nudging (unchanged)
                 this::transferShouldRun);    // motor: transferMotorPower (1.0) only while launching; no dpad stepping
         // Motor while nudging: with the transferMotor binding off, TransferSubsystem runs the motor at autoNudgePower
-        // (0.5) when a ball is detected or the gp1 RB nudge toggle is on (wheels off only), unless feedHold holds it.
-        transferSubsystem.setNudgeRequest(() -> !anyWheelSpinning() && transferNudgeToggle);
+        // when a ball is detected (wheels off only), unless feedHold holds it.
+        // gp1 RB press: reverse ONE ball space - only the transfer motor runs backwards (servos off), measured by its
+        // encoder (TransferSubsystem.reverseStepTicks). A launch feed cancels it.
         // The ball-detect auto-nudge inside TransferSubsystem is held (a) while any wheel spins and the fire gate is
         // closed (pre-spinning without a trigger, or firing with a wheel not back at speed), otherwise it would feed at
         // 0.5 power around the gate and fire a staged ball on its own; and (b) while gp1 reverses the intake, so the
@@ -151,13 +151,13 @@ public class WholeBotTest extends ModularOpMode {
      * Transfer belt + servos at full feed power. Priority:
      *  1. gp1 intake reverse stops the transfer, always.
      *  2. A gp2 fire trigger with its wheels at speed feeds; gp1 intake forward / the Y macro does not block it.
-     *  3. With every wheel stopped, a detected ball is staged, and gp1 RB's nudge toggle can run the transfer.
+     *  3. With every wheel stopped, a detected ball is staged. (gp1 RB's reverse nudge never runs the servos.)
      *  While any wheel spins without an open fire gate, nothing feeds.
      */
     private boolean transferCommanded() {
         if (intakeReversing()) return false;
         if (transferShouldRun()) return true;
-        return !anyWheelSpinning() && (transferNudgeToggle || transferSubsystem.hasGameElement());
+        return !anyWheelSpinning() && !transferSubsystem.isReversing() && transferSubsystem.hasGameElement();
     }
 
     /** gp2 RT: fire Pollen. */
@@ -216,9 +216,9 @@ public class WholeBotTest extends ModularOpMode {
     @Override
     public void loop() {
         LoopProfiler.begin();
-        // gp1 RB: toggle transfer nudge
+        // gp1 RB: reverse the transfer one ball space (motor backwards only)
         boolean rbNow = gamepad1.right_bumper;
-        if (rbNow && !prevRB) transferNudgeToggle = !transferNudgeToggle;
+        if (rbNow && !prevRB) transferSubsystem.startReverseStep();
         prevRB = rbNow;
 
         // gp1 Y: toggle Flower pickup. Turning it on cancels the intake macro and the extender toggle.
@@ -352,7 +352,7 @@ public class WholeBotTest extends ModularOpMode {
             telemetry.addData("Distance (cm)", "%.1f", distance);
             boolean elementDetected = transferSubsystem.hasGameElement();
             telemetry.addData("Game element", elementDetected ? "DETECTED" : "none");
-            boolean autoNudgeActive = elementDetected && !transferNudgeToggle && !transferSubsystem.isFeedHeld();
+            boolean autoNudgeActive = elementDetected && !transferSubsystem.isReversing() && !transferSubsystem.isFeedHeld();
             telemetry.addData("Auto nudge", autoNudgeActive ? "ACTIVE" : "off");
         } else {
             telemetry.addData("Distance sensor", "not found");
@@ -360,8 +360,11 @@ public class WholeBotTest extends ModularOpMode {
         double distance2 = transferSubsystem.getDistance2();
         telemetry.addData("Distance2 (cm)", Double.isNaN(distance2) ? "not found" : String.format("%.1f", distance2));
         telemetry.addLine("gp2 RB: pre-spin pollen | gp2 LB: pre-spin both | gp2 RT: shoot pollen | gp2 LT: shoot pollen + nectar | dpad up/down: pollen vel +/-20 | Y/A: nectar vel +/-20");
-        telemetry.addData("Transfer nudge", transferNudgeToggle ? "ON" : "off");
-        telemetry.addLine("gp1 RT: intake fwd | gp1 LT: intake rev (stops transfer) | gp1 RB: transfer nudge (wheels off only) | gp1 LB: toggle extender | gp1 A: intake macro | gp1 Y: Flower pickup on/off");
+        telemetry.addData("Reverse step (gp1 RB)", transferSubsystem.isReversing() ? "RUNNING"
+                : String.format("last %d / %d ticks%s", transferSubsystem.getLastReverseTicks(),
+                        TransferSubsystem.reverseStepTicks, transferSubsystem.didLastReverseTimeOut() ? " (TIMED OUT)" : ""));
+        telemetry.addData("Transfer encoder", transferSubsystem.getMotorPosition());
+        telemetry.addLine("gp1 RT: intake fwd | gp1 LT: intake rev (stops transfer) | gp1 RB: reverse transfer 1 ball (motor only) | gp1 LB: toggle extender | gp1 A: intake macro | gp1 Y: Flower pickup on/off");
         // One log line per gate transition, so shots can be lined up with the LauncherVelocity trace.
         boolean gateOpen = transferShouldRun();
         if (gateOpen != lastGateOpen) {
