@@ -32,7 +32,7 @@ import java.util.function.BooleanSupplier;
  *    the heading as is and Blue subtracts 180 deg. Returns 0 (robot-centric) until the alliance and heading are known.
  */
 @Configurable
-public class LocalizerSubsystem extends Subsystem {
+public class LocalizerSubsystem extends Subsystem implements PoseSource {
 
     // Red Garden corner pose: front bumper on the left wall, left side on the bottom wall, tracking center 9 in from each.
     public static double cornerX = 9.0;

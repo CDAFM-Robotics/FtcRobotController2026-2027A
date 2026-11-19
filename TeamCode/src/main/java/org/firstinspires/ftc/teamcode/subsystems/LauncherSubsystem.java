@@ -151,6 +151,14 @@ public class LauncherSubsystem extends Subsystem {
         nectarLauncherMotor.setGains(kS, kV, kP, kI, kIMax).setNominalVoltage(nominalVoltage).setVoltageReadPeriodMs(voltageReadPeriodMs);
     }
 
+    public void setPollenLauncherVelocity(double velocity) {
+        pollenLauncherVelocity = velocity;
+    }
+
+    public void setNectarLauncherVelocity(double velocity) {
+        nectarLauncherVelocity = velocity;
+    }
+
     @Override
     public void update() {
         applyGains();   // cheap field copies; this is what makes the Panels sliders live

@@ -18,7 +18,8 @@ import java.util.function.DoubleSupplier;
  * wall), and the up CELL's opening faces outward (toward the audience wall or the far wall), centered ~59.6 in above
  * the tiles. The opening's x/y below are worked out from the manual's figures (~+/-2 in).
  *
- * The driver picks which of our two CELLS is up (audience or far side); nothing reads the camera.
+ * We always target the CELL on the robot's half of the field (audience or far side, from the pose); nothing reads the
+ * camera and no button selects it.
  *
  * Robot: both launchers fire out the robot's RIGHT side (shot direction = heading - 90 deg). Along the robot's length
  * (from CAD, 18 in robot, tracking center 9 in from the front): Pollen launcher 6.148 in behind the center, Nectar
@@ -68,42 +69,48 @@ public class AutoAimSubsystem extends Subsystem {
 
     public enum CellSide { AUDIENCE, FAR }
 
-    private final LocalizerSubsystem localizer;
+    private final PoseSource pose;
     private BindingManager bindingManager;
     private DoubleSupplier manualTurn;
-
-    private CellSide side = CellSide.AUDIENCE;
-    private boolean prevAudience = false, prevFar = false;
 
     private double turnCommand = 0;
     private double headingErrorRad = Double.NaN;
     private boolean aiming = false;
 
-    public AutoAimSubsystem(LocalizerSubsystem localizer) {
-        this.localizer = localizer;
+    /**
+     * @param pose field pose + alliance source: {@link LocalizerSubsystem} in TeleOp, {@link FollowerPoseSource} (the
+     *             Pedro Follower) in autonomous.
+     */
+    public AutoAimSubsystem(PoseSource pose) {
+        this.pose = pose;
     }
 
     /**
-     * @param aimHold        held: the robot turns itself so the Pollen line faces the CELL
-     * @param pickAudience   press: target the audience-side CELL
-     * @param pickFar        press: target the far-side CELL
-     * @param manualTurn     the driver's turn stick, used whenever aim is not active
+     * The CELL we aim at: whichever of our two is on the robot's half of the field. The two CELLS sit at audienceCellY
+     * and farCellY, so the boundary is halfway between them - a robot nearer the audience wall targets the audience
+     * CELL, otherwise the far CELL. Picked from the pose every loop; no driver input selects it.
      */
-    public void setBindings(BindingManager bindingManager, BooleanSupplier aimHold, BooleanSupplier pickAudience,
-                            BooleanSupplier pickFar, DoubleSupplier manualTurn) {
+    public CellSide getTargetCell() {
+        return pose.getY() < (audienceCellY + farCellY) / 2 ? CellSide.AUDIENCE : CellSide.FAR;
+    }
+
+    /**
+     * @param aimHold     held: the robot turns itself so the Pollen line faces the CELL on its half of the field
+     * @param manualTurn  the driver's turn stick, used whenever aim is not active
+     */
+    public void setBindings(BindingManager bindingManager, BooleanSupplier aimHold, DoubleSupplier manualTurn) {
         bindingManager.addBinding("aimHold", aimHold);
-        bindingManager.addBinding("aimPickAudience", pickAudience);
-        bindingManager.addBinding("aimPickFar", pickFar);
         this.bindingManager = bindingManager;
         this.manualTurn = manualTurn;
     }
 
-    /** Turn command for the drivetrain: auto while aiming, otherwise the driver's stick. */
+    /** Turn command for the drivetrain: auto while aiming, otherwise the driver's stick (0 when no stick is wired). */
     public double getTurn() {
-        return aiming ? turnCommand : manualTurn.getAsDouble();
+        if (aiming) return turnCommand;
+        return manualTurn != null ? manualTurn.getAsDouble() : 0;
     }
 
-    public boolean isAvailable() { return localizer.isPoseKnown(); }
+    public boolean isAvailable() { return pose.isPoseKnown(); }
 
     /** True while the aim button is held and the robot is turning itself. */
     public boolean isAiming() { return aiming; }
@@ -115,14 +122,14 @@ public class AutoAimSubsystem extends Subsystem {
         return isAvailable() && !Double.isNaN(headingErrorRad) && Math.abs(Math.toDegrees(headingErrorRad)) <= aimedToleranceDeg;
     }
 
-    public double getTargetX() { return localizer.getAlliance() == Alliance.BLUE ? blueHiveX : redHiveX; }
-    public double getTargetY() { return side == CellSide.AUDIENCE ? audienceCellY : farCellY; }
+    public double getTargetX() { return pose.getAlliance() == Alliance.BLUE ? blueHiveX : redHiveX; }
+    public double getTargetY() { return getTargetCell() == CellSide.AUDIENCE ? audienceCellY : farCellY; }
 
     /** Distance (in) from the launcher at the given forward offset to the CELL, at the robot's current pose. */
     private double launcherDistance(double forwardOffset) {
-        double h = localizer.getHeading();
-        double lx = localizer.getX() + forwardOffset * Math.cos(h);
-        double ly = localizer.getY() + forwardOffset * Math.sin(h);
+        double h = pose.getHeading();
+        double lx = pose.getX() + forwardOffset * Math.cos(h);
+        double ly = pose.getY() + forwardOffset * Math.sin(h);
         return Math.hypot(getTargetX() - lx, getTargetY() - ly);
     }
 
@@ -146,11 +153,11 @@ public class AutoAimSubsystem extends Subsystem {
      * wall, -y; far CELL faces the far wall, +y) and the line from the CELL to the point between the launchers. 0..180.
      */
     public double getShotAngleDeg() {
-        double h = localizer.getHeading();
+        double h = pose.getHeading();
         double mid = pollenForwardOffset + aimBlend * (nectarForwardOffset - pollenForwardOffset);
-        double vx = localizer.getX() + mid * Math.cos(h) - getTargetX();
-        double vy = localizer.getY() + mid * Math.sin(h) - getTargetY();
-        double facingY = side == CellSide.AUDIENCE ? -1 : 1;
+        double vx = pose.getX() + mid * Math.cos(h) - getTargetX();
+        double vy = pose.getY() + mid * Math.sin(h) - getTargetY();
+        double facingY = getTargetCell() == CellSide.AUDIENCE ? -1 : 1;
         double len = Math.hypot(vx, vy);
         if (len < 1e-6) return 0;
         return Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, vy * facingY / len))));
@@ -184,8 +191,8 @@ public class AutoAimSubsystem extends Subsystem {
      * NaN if the robot is closer to the CELL than |a|.
      */
     private double desiredHeading() {
-        double dx = getTargetX() - localizer.getX();
-        double dy = getTargetY() - localizer.getY();
+        double dx = getTargetX() - pose.getX();
+        double dy = getTargetY() - pose.getY();
         double dist = Math.hypot(dx, dy);
         double a = pollenForwardOffset + aimBlend * (nectarForwardOffset - pollenForwardOffset);
         if (dist <= Math.abs(a) + 1e-6) return Double.NaN;
@@ -209,21 +216,16 @@ public class AutoAimSubsystem extends Subsystem {
 
     @Override
     public void update() {
-        boolean audienceNow = bindingManager.checkBinding("aimPickAudience");
-        boolean farNow = bindingManager.checkBinding("aimPickFar");
-        if (audienceNow && !prevAudience) side = CellSide.AUDIENCE;
-        if (farNow && !prevFar) side = CellSide.FAR;
-        prevAudience = audienceNow;
-        prevFar = farNow;
-
         if (isAvailable()) {
             double want = desiredHeading();
-            headingErrorRad = Double.isNaN(want) ? Double.NaN : wrap(want - localizer.getHeading());
+            headingErrorRad = Double.isNaN(want) ? Double.NaN : wrap(want - pose.getHeading());
         } else {
             headingErrorRad = Double.NaN;
         }
 
-        aiming = bindingManager.checkBinding("aimHold") && !Double.isNaN(headingErrorRad);
+        // Autonomous registers this subsystem (so update() runs) without aim bindings; with no BindingManager it simply
+        // never auto-turns - the launcher still reads the distance-based velocity getters, which don't need update().
+        aiming = bindingManager != null && bindingManager.checkBinding("aimHold") && !Double.isNaN(headingErrorRad);
         if (aiming) {
             double e = headingErrorRad;
             double u = 0;
@@ -239,7 +241,7 @@ public class AutoAimSubsystem extends Subsystem {
     }
 
     private String cellName() {
-        return (localizer.getAlliance() == Alliance.BLUE ? "BLUE " : "RED ") + side + " CELL";
+        return (pose.getAlliance() == Alliance.BLUE ? "BLUE " : "RED ") + getTargetCell() + " CELL";
     }
 
     /** Aim lines for the Driver Station. */
@@ -248,7 +250,7 @@ public class AutoAimSubsystem extends Subsystem {
             telemetry.addLine("AIM: unavailable (alliance / pose not set) - fixed launcher speeds");
             return;
         }
-        telemetry.addLine("TARGET: " + cellName() + "  (gp2 dpad left = audience, right = far)");
+        telemetry.addLine("TARGET: " + cellName() + "  (auto: the CELL on your half of the field)");
         String aimState;
         if (Double.isNaN(headingErrorRad)) aimState = "too close to the CELL";
         else if (isAimed()) aimState = "AIMED";

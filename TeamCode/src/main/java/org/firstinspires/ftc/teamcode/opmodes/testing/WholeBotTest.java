@@ -121,14 +121,12 @@ public class WholeBotTest extends ModularOpMode {
                 gamepad1);
         registerSubsystem(localizerSubsystem);
 
-        // Auto-aim at our up CELL + launcher speed from distance. gp2 X held: robot turns so the line between the
-        // launchers faces the CELL. gp2 dpad left / right: audience / far CELL.
+        // Auto-aim at the CELL on our half of the field + launcher speed from distance. gp2 X held: robot turns so the
+        // line between the launchers faces that CELL (which CELL is chosen from the pose, no button).
         // Registered before the drivetrain so the drive gets this loop's turn command.
         autoAimSubsystem = new AutoAimSubsystem(localizerSubsystem);
         autoAimSubsystem.setBindings(bindingManager,
                 () -> gamepad2.x,
-                () -> gamepad2.dpad_left,
-                () -> gamepad2.dpad_right,
                 () -> gamepad1.right_stick_x);
         launcherSubsystem.setVelocitySources(autoAimSubsystem::getPollenBaseVelocity, autoAimSubsystem::getNectarBaseVelocity);
         registerSubsystem(autoAimSubsystem);

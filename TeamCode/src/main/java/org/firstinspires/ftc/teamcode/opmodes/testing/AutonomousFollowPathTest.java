@@ -3,12 +3,14 @@ package org.firstinspires.ftc.teamcode.opmodes.testing;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import static com.pedropathing.api.Paths.line;
 
 import org.firstinspires.ftc.teamcode.pedropathing.Constants;
 
 @Autonomous(name = "Autonomous Follow Path Test", group = "Testing")
+@Disabled
 public class AutonomousFollowPathTest extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
