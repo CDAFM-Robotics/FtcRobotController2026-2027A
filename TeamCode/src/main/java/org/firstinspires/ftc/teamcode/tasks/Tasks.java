@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.tasks;
 import com.cdarobotics.cdalib.bindings.BindingManager;
 import com.cdarobotics.cdalib.tasks.InstantTask;
 import com.cdarobotics.cdalib.tasks.NullTask;
+import com.cdarobotics.cdalib.tasks.RaceTask;
 import com.cdarobotics.cdalib.tasks.SequentialTask;
 import com.cdarobotics.cdalib.tasks.SleepTask;
 import com.cdarobotics.cdalib.tasks.Task;
@@ -33,6 +34,9 @@ public class Tasks {
     // How close each wheel must sit to its own target before we feed (ticks/s). Hub velocity arrives in ~20 ticks/s
     // steps and the flywheel PID settles with a little steady-state error, so we wait for "at speed", not an exact match.
     private static final double LAUNCHER_AT_SPEED_TOLERANCE = 30;
+    // Give up waiting for "at speed" after this long and shoot anyway, so a wheel that never gets there (loose motor or
+    // encoder cable, jammed ball) can't stall the auto before it parks. Normal spin-up from 0 takes ~1 s.
+    private static final long LAUNCHER_SPIN_UP_TIMEOUT_MS = 3000;
 
     /**
      * @param pollenBaseVelocity base Pollen target (ticks/s), e.g. AutoAimSubsystem::getPollenBaseVelocity. Return NaN
@@ -96,11 +100,17 @@ public class Tasks {
         );
     }
 
-    /** Wait until each wheel is within tolerance of its own live target; Pollen and Nectar run at different speeds. */
+    /**
+     * Wait until each wheel is within tolerance of its own live target (Pollen and Nectar run at different speeds), or
+     * LAUNCHER_SPIN_UP_TIMEOUT_MS passes, whichever comes first.
+     */
     public Task autoWaitForLauncherVelocityTask() {
-        return new WaitUntilTask(
-            () -> launcher.getPollenCurrentVelocity() >= launcher.getPollenTargetVelocity() - LAUNCHER_AT_SPEED_TOLERANCE
-               && launcher.getNectarCurrentVelocity() >= launcher.getNectarTargetVelocity() - LAUNCHER_AT_SPEED_TOLERANCE
+        return new RaceTask(
+            new WaitUntilTask(
+                () -> launcher.getPollenCurrentVelocity() >= launcher.getPollenTargetVelocity() - LAUNCHER_AT_SPEED_TOLERANCE
+                   && launcher.getNectarCurrentVelocity() >= launcher.getNectarTargetVelocity() - LAUNCHER_AT_SPEED_TOLERANCE
+            ),
+            new SleepTask(LAUNCHER_SPIN_UP_TIMEOUT_MS)
         );
     }
 
