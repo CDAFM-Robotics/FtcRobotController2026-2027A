@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.testing;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+
 import com.bylazar.configurables.annotations.Configurable;
 import com.cdarobotics.cdalib.opmodes.ModularOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -13,6 +15,7 @@ import org.firstinspires.ftc.teamcode.util.LoopProfiler;
  * out of the LauncherVelocity log, which carries target, actual, power and battery voltage every loop.
  */
 @Configurable
+@Disabled   // Nov 20: hidden for competition; remove this line to use it
 @TeleOp(name = "Launcher Step Test", group = "Testing")
 public class LauncherStepTest extends ModularOpMode {
 

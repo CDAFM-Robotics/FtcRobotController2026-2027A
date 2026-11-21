@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.testing;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -11,6 +13,7 @@ import com.qualcomm.robotcore.hardware.Servo;
  *
  * gamepad1: dpad up/down +/-0.01 | RB/LB +/-0.05 | A save DOWN | Y save UP | X go to DOWN | B go to UP
  */
+@Disabled   // Nov 20: hidden for competition; remove this line to use it
 @TeleOp(name = "Flower Bar Servo Test", group = "Testing")
 public class FlowerBarServoTest extends LinearOpMode {
 

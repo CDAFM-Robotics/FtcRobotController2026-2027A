@@ -1,11 +1,14 @@
 package org.firstinspires.ftc.teamcode.opmodes.testing;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+
 import com.cdarobotics.cdalib.opmodes.ModularOpMode;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.subsystems.LimelightDetectorSubsystem;
 
+@Disabled   // Nov 20: hidden for competition; remove this line to use it
 @TeleOp(name = "Limelight Pollen Detector Test", group = "Testing")
 public class LimelightPollenDetectorTest extends ModularOpMode {
 

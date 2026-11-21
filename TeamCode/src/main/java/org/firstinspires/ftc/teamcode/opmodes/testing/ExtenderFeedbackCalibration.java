@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.testing;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+
 import android.util.Log;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -20,6 +22,7 @@ import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
  *
  * gamepad1: X go INIT | A go RETRACTED | Y go EXTENDED | RB record the current position (0.5 s average)
  */
+@Disabled   // Nov 20: hidden for competition; remove this line to use it
 @TeleOp(name = "Extender Feedback Calibration", group = "Testing")
 public class ExtenderFeedbackCalibration extends LinearOpMode {
 

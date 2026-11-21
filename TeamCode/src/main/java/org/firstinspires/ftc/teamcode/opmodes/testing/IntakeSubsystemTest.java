@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.testing;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.panels.Panels;
 import com.bylazar.telemetry.PanelsTelemetry;
@@ -14,6 +16,7 @@ import org.firstinspires.ftc.teamcode.subsystems.TransferSubsystem;
 import java.util.function.DoubleSupplier;
 
 @Configurable
+@Disabled   // Nov 20: hidden for competition; remove this line to use it
 @TeleOp(name = "Intake Test", group = "Testing")
 //@Photon
 public class IntakeSubsystemTest extends ModularOpMode {

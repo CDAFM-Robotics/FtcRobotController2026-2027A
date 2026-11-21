@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.testing;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+
 import com.bylazar.configurables.annotations.Configurable;
 import com.cdarobotics.cdalib.opmodes.ModularOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -14,6 +16,7 @@ import org.firstinspires.ftc.teamcode.subsystems.TransferSubsystem;
 import org.firstinspires.ftc.teamcode.util.LoopProfiler;
 
 @Configurable
+@Disabled   // Nov 20: hidden for competition; remove this line to use it
 @TeleOp(name = "Whole Bot Test", group = "Testing")
 public class WholeBotTest extends ModularOpMode {
 

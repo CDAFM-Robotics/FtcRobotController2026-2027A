@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.testing;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+
 import android.util.Log;
 
 import com.bylazar.configurables.annotations.Configurable;
@@ -19,6 +21,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
  * input is used. Needs nothing in the transfer: anything there will be launched.
  */
 @Configurable
+@Disabled   // Nov 20: hidden for competition; remove this line to use it
 @TeleOp(name = "Launcher Open Loop Test", group = "Testing")
 public class LauncherOpenLoopTest extends OpMode {
 
